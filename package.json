@@ -1,0 +1,30 @@
+{
+  "name": "module-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare": "husky",
+    "test": "pnpm --filter module-assistant-client test",
+    "lint": "pnpm --filter module-assistant-client lint && pnpm --filter module-assistant-server lint",
+    "format:check": "pnpm --filter module-assistant-client format:check && pnpm --filter module-assistant-server format:check",
+    "format": "pnpm --filter module-assistant-client format && pnpm --filter module-assistant-server format"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,mjs,cjs,js,json,css,html,md}": [
+      "prettier --write"
+    ],
+    "client/src/**/*.{ts,tsx}": [
+      "bash -c 'cd client && npx eslint --fix --no-warn-ignored \"$@\"' bash"
+    ],
+    "server/src/**/*.ts": [
+      "bash -c 'cd server && npx eslint --fix --no-warn-ignored \"$@\"' bash"
+    ]
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^16.4.0"
+  }
+}

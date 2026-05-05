@@ -1,4 +1,4 @@
-import { db } from "../lib/prisma.js";
+import { db } from '../lib/prisma.js';
 
 export async function createConversation(userId: string, title?: string) {
   return db.conversation.create({
@@ -11,24 +11,37 @@ export async function getConversations(userId: string) {
   return db.conversation.findMany({
     where: { userId },
     select: { id: true, title: true, updatedAt: true },
-    orderBy: { updatedAt: "desc" },
+    orderBy: { updatedAt: 'desc' },
   });
 }
 
 export async function getConversation(conversationId: string) {
   return db.conversation.findUnique({
     where: { id: conversationId },
-    include: { messages: { orderBy: { createdAt: "asc" } } },
+    include: { messages: { orderBy: { createdAt: 'asc' } } },
+  });
+}
+
+export async function updateConversationTitle(conversationId: string, title: string) {
+  return db.conversation.update({
+    where: { id: conversationId },
+    data: { title },
+    select: { id: true, title: true },
   });
 }
 
 export async function createMessage(
   conversationId: string,
-  role: "user" | "assistant",
+  role: 'user' | 'assistant',
   content: string,
   metadata?: Record<string, unknown>,
 ) {
   return db.message.create({
-    data: { conversationId, role, content, metadata: metadata ?? undefined },
+    data: {
+      conversationId,
+      role,
+      content,
+      metadata: metadata as Record<string, unknown>,
+    },
   });
 }

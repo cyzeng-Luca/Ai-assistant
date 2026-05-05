@@ -1,9 +1,9 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '../../prisma/generated/client.ts';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+const adapter = new PrismaPg({
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  connectionString: process.env.DATABASE_URL!,
+});
 
-export const db = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = db;
-}
+export const db = new PrismaClient({ adapter });

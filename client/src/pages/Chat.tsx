@@ -35,7 +35,7 @@ export default function ChatPage() {
     stopStreaming,
     reset: resetSSE,
   } = useSSE((fullAnswer) => {
-    addMessage({ id: '', role: 'assistant', content: fullAnswer });
+    addMessage({ id: crypto.randomUUID(), role: 'assistant', content: fullAnswer });
   });
 
   const activeConversation = conversations.find((c) => c.id === activeId);
@@ -57,7 +57,7 @@ export default function ChatPage() {
 
   const handleSend = async (content: string) => {
     if (!activeId) return;
-    addMessage({ id: '', role: 'user', content });
+    addMessage({ id: crypto.randomUUID(), role: 'user', content });
     sendMessage(activeId, content);
     await api.updateConversationTitle(activeId, content);
     void fetchConversations();
@@ -86,14 +86,22 @@ export default function ChatPage() {
     return (
       <Layout className="h-screen">
         <Header className="!bg-white flex items-center border-b border-ant-gray-100 px-4">
-          <Button type="text" icon={<MenuOutlined />} onClick={() => { setDrawerOpen(true); }} />
+          <Button
+            type="text"
+            icon={<MenuOutlined />}
+            onClick={() => {
+              setDrawerOpen(true);
+            }}
+          />
           <Typography.Text strong className="ml-3 truncate">
             {activeConversation?.title ?? '模块查询助手'}
           </Typography.Text>
         </Header>
         <Drawer
           open={drawerOpen}
-          onClose={() => { setDrawerOpen(false); }}
+          onClose={() => {
+            setDrawerOpen(false);
+          }}
           placement="left"
           width={280}
           styles={{ body: { padding: 0 } }}

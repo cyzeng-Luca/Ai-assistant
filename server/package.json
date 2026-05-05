@@ -13,7 +13,8 @@
     "format:check": "prettier --check src/",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
     "@langchain/core": "^1.0.0",

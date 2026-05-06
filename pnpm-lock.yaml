@@ -122,13 +122,13 @@ importers:
     dependencies:
       '@langchain/core':
         specifier: ^1.0.0
-        version: 1.1.44
+        version: 1.1.44(openai@6.36.0(zod@3.25.76))
       '@langchain/deepseek':
         specifier: ^1.0.25
-        version: 1.0.25(@langchain/core@1.1.44)
+        version: 1.0.25(@langchain/core@1.1.44(openai@6.36.0(zod@3.25.76)))
       '@langchain/langgraph':
         specifier: ^1.2.9
-        version: 1.3.0(@langchain/core@1.1.44)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)
+        version: 1.3.0(@langchain/core@1.1.44(openai@6.36.0(zod@3.25.76)))(openai@6.36.0(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)
       '@prisma/adapter-pg':
         specifier: ^7.0.0
         version: 7.8.0
@@ -137,7 +137,7 @@ importers:
         version: 7.8.0(prisma@7.8.0(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)
       chromadb:
         specifier: ^1.10.0
-        version: 1.10.5
+        version: 1.10.5(openai@6.36.0(zod@3.25.76))
       cors:
         specifier: ^2.8.5
         version: 2.8.6
@@ -147,12 +147,18 @@ importers:
       express:
         specifier: ^4.21.0
         version: 4.22.1
+      fuse.js:
+        specifier: ^7.3.0
+        version: 7.3.0
       langchain:
         specifier: ^1.3.5
-        version: 1.3.5(@langchain/core@1.1.44)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 1.3.5(@langchain/core@1.1.44(openai@6.36.0(zod@3.25.76)))(openai@6.36.0(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       mammoth:
         specifier: ^1.8.0
         version: 1.12.0
+      openai:
+        specifier: ^6.36.0
+        version: 6.36.0(zod@3.25.76)
       uuid:
         specifier: ^10.0.0
         version: 10.0.0
@@ -2901,6 +2907,10 @@ packages:
 
   functions-have-names@1.2.3:
     resolution: {integrity: sha512-xckBUXyTIqT97tq2x2AMb+g163b5JFysYk0x4qxNFwbfQkmNZoiRHb6sPzI9/QV33WeuvVYBUIiD4NzNIyqaRQ==}
+
+  fuse.js@7.3.0:
+    resolution: {integrity: sha512-plz8RVjfcDedTGfVngWH1jmJvBvAwi1v2jecfDerbEnMcmOYUEEwKFTHbNoCiYyzaK2Ws8lABkTCcRSqCY1q4w==}
+    engines: {node: '>=10'}
 
   generate-function@2.3.1:
     resolution: {integrity: sha512-eeB5GfMNeevm/GRYq20ShmsaGcmI81kIX2K9XQx5miC8KdHaC6Jm0qQ8ZNeGOi7wYB8OsdxKs+Y2oVuTFuVwKQ==}
@@ -6358,7 +6368,7 @@ snapshots:
 
   '@kurkle/color@0.3.4': {}
 
-  '@langchain/core@1.1.44':
+  '@langchain/core@1.1.44(openai@6.36.0(zod@3.25.76))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       '@standard-schema/spec': 1.1.0
@@ -6366,7 +6376,7 @@ snapshots:
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.21
-      langsmith: 0.6.0
+      langsmith: 0.6.0(openai@6.36.0(zod@3.25.76))
       mustache: 4.2.0
       p-queue: 6.6.2
       zod: 3.25.76
@@ -6377,21 +6387,21 @@ snapshots:
       - openai
       - ws
 
-  '@langchain/deepseek@1.0.25(@langchain/core@1.1.44)':
+  '@langchain/deepseek@1.0.25(@langchain/core@1.1.44(openai@6.36.0(zod@3.25.76)))':
     dependencies:
-      '@langchain/core': 1.1.44
-      '@langchain/openai': 1.4.5(@langchain/core@1.1.44)
+      '@langchain/core': 1.1.44(openai@6.36.0(zod@3.25.76))
+      '@langchain/openai': 1.4.5(@langchain/core@1.1.44(openai@6.36.0(zod@3.25.76)))
     transitivePeerDependencies:
       - ws
 
-  '@langchain/langgraph-checkpoint@1.0.2(@langchain/core@1.1.44)':
+  '@langchain/langgraph-checkpoint@1.0.2(@langchain/core@1.1.44(openai@6.36.0(zod@3.25.76)))':
     dependencies:
-      '@langchain/core': 1.1.44
+      '@langchain/core': 1.1.44(openai@6.36.0(zod@3.25.76))
       uuid: 10.0.0
 
-  '@langchain/langgraph-sdk@1.9.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@langchain/langgraph-sdk@1.9.1(openai@6.36.0(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
-      '@langchain/core': 1.1.44
+      '@langchain/core': 1.1.44(openai@6.36.0(zod@3.25.76))
       '@langchain/protocol': 0.0.15
       '@types/json-schema': 7.0.15
       p-queue: 9.2.0
@@ -6407,11 +6417,11 @@ snapshots:
       - openai
       - ws
 
-  '@langchain/langgraph@1.3.0(@langchain/core@1.1.44)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)':
+  '@langchain/langgraph@1.3.0(@langchain/core@1.1.44(openai@6.36.0(zod@3.25.76)))(openai@6.36.0(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)':
     dependencies:
-      '@langchain/core': 1.1.44
-      '@langchain/langgraph-checkpoint': 1.0.2(@langchain/core@1.1.44)
-      '@langchain/langgraph-sdk': 1.9.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@langchain/core': 1.1.44(openai@6.36.0(zod@3.25.76))
+      '@langchain/langgraph-checkpoint': 1.0.2(@langchain/core@1.1.44(openai@6.36.0(zod@3.25.76)))
+      '@langchain/langgraph-sdk': 1.9.1(openai@6.36.0(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@langchain/protocol': 0.0.15
       '@standard-schema/spec': 1.1.0
       uuid: 10.0.0
@@ -6427,9 +6437,9 @@ snapshots:
       - vue
       - ws
 
-  '@langchain/openai@1.4.5(@langchain/core@1.1.44)':
+  '@langchain/openai@1.4.5(@langchain/core@1.1.44(openai@6.36.0(zod@3.25.76)))':
     dependencies:
-      '@langchain/core': 1.1.44
+      '@langchain/core': 1.1.44(openai@6.36.0(zod@3.25.76))
       js-tiktoken: 1.0.21
       openai: 6.36.0(zod@3.25.76)
       zod: 3.25.76
@@ -7483,10 +7493,12 @@ snapshots:
     dependencies:
       readdirp: 5.0.0
 
-  chromadb@1.10.5:
+  chromadb@1.10.5(openai@6.36.0(zod@3.25.76)):
     dependencies:
       cliui: 8.0.1
       isomorphic-fetch: 3.0.0
+    optionalDependencies:
+      openai: 6.36.0(zod@3.25.76)
     transitivePeerDependencies:
       - encoding
 
@@ -8128,6 +8140,8 @@ snapshots:
 
   functions-have-names@1.2.3: {}
 
+  fuse.js@7.3.0: {}
+
   generate-function@2.3.1:
     dependencies:
       is-property: 1.0.2
@@ -8572,12 +8586,12 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  langchain@1.3.5(@langchain/core@1.1.44)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  langchain@1.3.5(@langchain/core@1.1.44(openai@6.36.0(zod@3.25.76)))(openai@6.36.0(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
-      '@langchain/core': 1.1.44
-      '@langchain/langgraph': 1.3.0(@langchain/core@1.1.44)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)
-      '@langchain/langgraph-checkpoint': 1.0.2(@langchain/core@1.1.44)
-      langsmith: 0.6.0
+      '@langchain/core': 1.1.44(openai@6.36.0(zod@3.25.76))
+      '@langchain/langgraph': 1.3.0(@langchain/core@1.1.44(openai@6.36.0(zod@3.25.76)))(openai@6.36.0(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)
+      '@langchain/langgraph-checkpoint': 1.0.2(@langchain/core@1.1.44(openai@6.36.0(zod@3.25.76)))
+      langsmith: 0.6.0(openai@6.36.0(zod@3.25.76))
       zod: 3.25.76
     transitivePeerDependencies:
       - '@opentelemetry/api'
@@ -8591,9 +8605,11 @@ snapshots:
       - ws
       - zod-to-json-schema
 
-  langsmith@0.6.0:
+  langsmith@0.6.0(openai@6.36.0(zod@3.25.76)):
     dependencies:
       p-queue: 6.6.2
+    optionalDependencies:
+      openai: 6.36.0(zod@3.25.76)
 
   leven@3.1.0: {}
 

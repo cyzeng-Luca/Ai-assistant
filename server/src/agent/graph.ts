@@ -1,110 +1,73 @@
-import { StateGraph, Annotation, END, START } from '@langchain/langgraph';
+import { StateGraph, MessagesAnnotation, END, START } from '@langchain/langgraph';
+import { ToolNode } from '@langchain/langgraph/prebuilt';
+import { AIMessage, SystemMessage } from '@langchain/core/messages';
+import { ChatDeepSeek } from '@langchain/deepseek';
 import type { RunnableConfig } from '@langchain/core/runnables';
-import { retrieveContext } from './rag.js';
-import { streamAnswer } from '../services/llm.js';
+import { env } from '../config.js';
+import { ragSearchTool } from './tools/ragSearch.js';
 
-const StateAnnotation = Annotation.Root({
-  question: Annotation<string>,
-  history: Annotation<{ role: string; content: string }[]>({
-    reducer: (_, b) => b,
-    default: () => [],
-  }),
-  needRag: Annotation<boolean>({
-    reducer: (_, b) => b,
-    default: () => false,
-  }),
-  sources: Annotation<string[]>({
-    reducer: (_, b) => b,
-    default: () => [],
-  }),
-  answer: Annotation<string>({
-    reducer: (_, b) => b,
-    default: () => '',
-  }),
+const model = new ChatDeepSeek({
+  apiKey: env.DEEPSEEK_API_KEY,
+  model: env.DEEPSEEK_MODEL,
+  configuration: { baseURL: env.DEEPSEEK_BASE_URL },
+  streaming: true,
 });
 
-type AgentState = typeof StateAnnotation.State;
+const SYSTEM_PROMPT = `你是一个 SaaS 模块查询助手。你可以使用 rag_search 工具搜索内部知识库中的文档。
+请根据用户的问题提供准确、简洁的回答。
+如果有参考文档，请优先基于文档内容回答，并注明信息来源。
+如果没有参考文档，请基于你的知识诚实回答。`;
 
-const SAAS_KEYWORDS = [
-  '模块',
-  '服务',
-  '接口',
-  'API',
-  '功能',
-  '系统',
-  '平台',
-  'module',
-  'service',
-  'api',
-  'function',
-  'system',
-  'platform',
-  '数据',
-  '配置',
-  '部署',
-  '集成',
-  '认证',
-  '权限',
-];
+const modelWithTools = model.bindTools([ragSearchTool]);
+const toolNode = new ToolNode([ragSearchTool]);
 
-export function shouldUseRag(question: string): boolean {
-  const q = question.toLowerCase();
-  return SAAS_KEYWORDS.some((kw) => q.includes(kw.toLowerCase()));
-}
-
-function decideNode(state: AgentState): Partial<AgentState> {
-  return { needRag: shouldUseRag(state.question) };
-}
-
-async function retrieveNode(state: AgentState): Promise<Partial<AgentState>> {
-  const sources = await retrieveContext(state.question);
-  return { sources };
-}
-
-async function generateNode(
-  state: AgentState,
+async function agentNode(
+  state: typeof MessagesAnnotation.State,
   config?: RunnableConfig,
-): Promise<Partial<AgentState>> {
-  const messages: { role: string; content: string }[] = [
-    ...state.history,
-    { role: 'user', content: state.question },
-  ];
+): Promise<Partial<typeof MessagesAnnotation.State>> {
+  const onToken = config?.configurable?.onToken as ((t: string) => void) | undefined;
 
-  const onToken = config?.configurable?.onToken as ((token: string) => void) | undefined;
+  const response = await modelWithTools.invoke([
+    new SystemMessage(SYSTEM_PROMPT),
+    ...state.messages,
+  ]);
 
-  let answer = '';
-  for await (const token of streamAnswer(messages, state.sources)) {
-    answer += token;
-    onToken?.(token);
+  // Only stream final answers (not intermediate tool-calling responses)
+  const content = typeof response.content === 'string' ? response.content : '';
+  if (onToken && content && !response.tool_calls?.length) {
+    onToken(content);
   }
 
-  return { answer };
+  return { messages: [response] };
 }
 
-const workflow = new StateGraph(StateAnnotation)
-  .addNode('decide', decideNode)
-  .addNode('retrieve', retrieveNode)
-  .addNode('generate', generateNode)
-  .addEdge(START, 'decide')
-  .addConditionalEdges('decide', (state: AgentState) => (state.needRag ? 'retrieve' : 'generate'))
-  .addEdge('retrieve', 'generate')
-  .addEdge('generate', END);
+function shouldContinue(state: typeof MessagesAnnotation.State): 'tools' | typeof END {
+  const lastMsg = state.messages[state.messages.length - 1];
+  if (lastMsg instanceof AIMessage && lastMsg.tool_calls?.length) {
+    return 'tools';
+  }
+  return END;
+}
+
+const workflow = new StateGraph(MessagesAnnotation)
+  .addNode('agent', agentNode)
+  .addNode('tools', toolNode)
+  .addEdge(START, 'agent')
+  .addConditionalEdges('agent', shouldContinue)
+  .addEdge('tools', 'agent');
 
 const agentGraph = workflow.compile();
 
-export type AgentInput = typeof StateAnnotation.State;
-export type AgentOutput = typeof StateAnnotation.State;
+export type AgentState = typeof MessagesAnnotation.State;
 
-/** 范式 1：非 SSE — 直接返回完整结果 */
-export async function runAgent(state: AgentInput): Promise<AgentOutput> {
+export async function runAgent(state: AgentState): Promise<AgentState> {
   return agentGraph.invoke(state);
 }
 
-/** 范式 2：SSE — 传入 onToken 回调，token 实时推送 */
 export async function runAgentStream(
-  state: AgentInput,
+  state: AgentState,
   callbacks: { onToken: (token: string) => void },
-): Promise<AgentOutput> {
+): Promise<AgentState> {
   return agentGraph.invoke(state, {
     configurable: { onToken: callbacks.onToken },
   });

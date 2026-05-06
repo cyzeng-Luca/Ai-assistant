@@ -34,14 +34,15 @@ export async function createMessage(
   conversationId: string,
   role: 'user' | 'assistant',
   content: string,
-  metadata?: Record<string, unknown>,
+  metadata?: unknown,
 ) {
   return db.message.create({
     data: {
       conversationId,
       role,
       content,
-      metadata: metadata as Record<string, unknown>,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+      metadata: metadata as any,
     },
   });
 }

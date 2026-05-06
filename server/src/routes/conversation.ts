@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { runAgentStream } from '../agent/graph.js';
 import * as conv from '../services/conversation.js';
 import { generateTitle } from '../services/llm.js';
@@ -85,15 +86,14 @@ conversationRouter.post('/:id/messages', async (req, res) => {
 
     const pastHistory = history.slice(0, -1);
 
-    // 运行 Agent（SSE 模式：token 实时推送）
+    // Build LangChain messages from history
+    const lcMessages = pastHistory.map((m) =>
+      m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content),
+    );
+    const userMsg = new HumanMessage(content);
+
     const result = await runAgentStream(
-      {
-        question: content,
-        history: pastHistory,
-        needRag: false,
-        sources: [],
-        answer: '',
-      },
+      { messages: [...lcMessages, userMsg] },
       {
         onToken: (token) => {
           send('token', { content: token });
@@ -101,15 +101,12 @@ conversationRouter.post('/:id/messages', async (req, res) => {
       },
     );
 
-    // RAG 触发通知
-    if (result.needRag && result.sources.length > 0) {
-      send('rag_triggered', { sources: result.sources });
-    }
+    // Extract final answer from last AI message
+    const lastMsg = result.messages.at(-1);
+    const answer = typeof lastMsg?.content === 'string' ? lastMsg.content : '';
 
     // 存储助手回复
-    const saved = await conv.createMessage(req.params.id, 'assistant', result.answer, {
-      needRag: result.needRag,
-    });
+    const saved = await conv.createMessage(req.params.id, 'assistant', answer);
 
     send('done', { messageId: saved.id });
   } catch {

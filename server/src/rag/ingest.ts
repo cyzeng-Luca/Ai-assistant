@@ -5,7 +5,7 @@ import { chunkDirectory } from './chunker.js';
 import { ingestChunks } from './rag.js';
 
 async function main() {
-  const docsDir = path.resolve(process.argv[2] || 'server/doc');
+  const docsDir = path.resolve(process.argv[2] || 'doc');
   console.log(`Scanning: ${docsDir}`);
 
   const start = performance.now();

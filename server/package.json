@@ -14,12 +14,16 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "ingest": "tsx src/rag/ingest.ts",
+    "langgraph:dev": "npx @langchain/langgraph-cli dev"
   },
   "dependencies": {
+    "@chonkiejs/core": "^0.0.9",
     "@langchain/core": "^1.0.0",
     "@langchain/deepseek": "^1.0.25",
     "@langchain/langgraph": "^1.2.9",
+    "@langchain/langgraph-checkpoint-postgres": "^1.0.1",
     "@prisma/adapter-pg": "^7.0.0",
     "@prisma/client": "^7.0.0",
     "chromadb": "^1.10.0",
@@ -35,6 +39,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@langchain/langgraph-cli": "^1.2.1",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",

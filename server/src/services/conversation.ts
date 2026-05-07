@@ -15,11 +15,15 @@ export async function getConversations(userId: string) {
   });
 }
 
-export async function getConversation(conversationId: string) {
+export async function getConversationMeta(conversationId: string) {
   return db.conversation.findUnique({
     where: { id: conversationId },
-    include: { messages: { orderBy: { createdAt: 'asc' } } },
+    select: { id: true, title: true, createdAt: true },
   });
+}
+
+export async function deleteConversation(conversationId: string) {
+  return db.conversation.delete({ where: { id: conversationId } });
 }
 
 export async function updateConversationTitle(conversationId: string, title: string) {
@@ -27,22 +31,5 @@ export async function updateConversationTitle(conversationId: string, title: str
     where: { id: conversationId },
     data: { title },
     select: { id: true, title: true },
-  });
-}
-
-export async function createMessage(
-  conversationId: string,
-  role: 'user' | 'assistant',
-  content: string,
-  metadata?: unknown,
-) {
-  return db.message.create({
-    data: {
-      conversationId,
-      role,
-      content,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-      metadata: metadata as any,
-    },
   });
 }

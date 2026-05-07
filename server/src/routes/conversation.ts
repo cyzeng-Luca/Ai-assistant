@@ -1,10 +1,36 @@
 import { Router } from 'express';
-import { HumanMessage, AIMessage } from '@langchain/core/messages';
-import { runAgentStream } from '../agent/graph.js';
+import { AIMessage, AIMessageChunk, HumanMessage, ToolMessage } from '@langchain/core/messages';
+import { runAgentStream, getMessages } from '../agent/graph.js';
+import { getCheckpointer } from '../agent/checkpointer.js';
 import * as conv from '../services/conversation.js';
 import { generateTitle } from '../services/llm.js';
+import { v4 as uuid } from 'uuid';
 
 export const conversationRouter: Router = Router();
+
+/** Convert LangChain checkpoint messages to frontend-safe format */
+function formatMessages(
+  lcMessages: any[],
+): { id: string; role: 'user' | 'assistant'; content: string }[] {
+  return lcMessages
+    .filter((m) => {
+      if (m instanceof ToolMessage) return false;
+      if (
+        (m instanceof AIMessage || m instanceof AIMessageChunk) &&
+        (m.tool_calls?.length || (m as any).tool_call_chunks?.length)
+      )
+        return false;
+      return m instanceof HumanMessage || m instanceof AIMessage || m instanceof AIMessageChunk;
+    })
+    .map(
+      (m) =>
+        ({
+          id: m.id ?? uuid(),
+          role: m instanceof HumanMessage ? 'user' : 'assistant',
+          content: typeof m.content === 'string' ? m.content : '',
+        }) satisfies { id: string; role: 'user' | 'assistant'; content: string },
+    );
+}
 
 // POST /api/conversations — 新建会话
 conversationRouter.post('/', async (req, res) => {
@@ -24,14 +50,28 @@ conversationRouter.get('/', async (req, res) => {
   res.json(list);
 });
 
-// GET /api/conversations/:id — 会话详情（含历史消息）
+// GET /api/conversations/:id — 会话详情（含历史消息，从 checkpoint 读取）
 conversationRouter.get('/:id', async (req, res) => {
-  const conversation = await conv.getConversation(req.params.id);
+  const conversation = await conv.getConversationMeta(req.params.id);
   if (!conversation) {
     res.status(404).json({ error: '会话不存在' });
     return;
   }
-  res.json(conversation);
+
+  const messages = await getMessages(req.params.id);
+  res.json({
+    id: conversation.id,
+    title: conversation.title,
+    messages: formatMessages(messages),
+  });
+});
+
+// DELETE /api/conversations/:id — 删除会话
+conversationRouter.delete('/:id', async (req, res) => {
+  await conv.deleteConversation(req.params.id);
+  const cp = await getCheckpointer();
+  await cp.deleteThread(req.params.id);
+  res.json({ success: true });
 });
 
 // PATCH /api/conversations/:id/title — 生成标题（LLM 总结）
@@ -51,6 +91,7 @@ conversationRouter.patch('/:id/title', async (req, res) => {
 });
 
 // POST /api/conversations/:id/messages — 发送消息，SSE 流式返回
+// checkpoint 自动管理消息历史，无需手动存取
 conversationRouter.post('/:id/messages', async (req, res) => {
   const { content } = req.body as { content?: string };
   if (!content?.trim()) {
@@ -74,41 +115,17 @@ conversationRouter.post('/:id/messages', async (req, res) => {
   };
 
   try {
-    // 存储用户消息
-    await conv.createMessage(req.params.id, 'user', content);
-
-    // 获取历史消息作为上下文（去掉刚插入的用户消息）
-    const conversation = await conv.getConversation(req.params.id);
-    const history =
-      conversation?.messages
-        .filter((m) => m.role !== 'system')
-        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })) ?? [];
-
-    const pastHistory = history.slice(0, -1);
-
-    // Build LangChain messages from history
-    const lcMessages = pastHistory.map((m) =>
-      m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content),
-    );
-    const userMsg = new HumanMessage(content);
-
-    const result = await runAgentStream(
-      { messages: [...lcMessages, userMsg] },
-      {
-        onToken: (token) => {
-          send('token', { content: token });
-        },
+    const result = await runAgentStream(req.params.id, content, {
+      onToken: (token) => {
+        send('token', { content: token });
       },
-    );
+    });
 
     // Extract final answer from last AI message
     const lastMsg = result.messages.at(-1);
     const answer = typeof lastMsg?.content === 'string' ? lastMsg.content : '';
 
-    // 存储助手回复
-    const saved = await conv.createMessage(req.params.id, 'assistant', answer);
-
-    send('done', { messageId: saved.id });
+    send('done', { content: answer });
   } catch {
     sendError('生成回答失败，请稍后重试');
   } finally {

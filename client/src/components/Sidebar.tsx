@@ -8,7 +8,7 @@ import type { Conversation } from '@/types';
 
 interface SidebarProps {
   activeId: string | null;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, skipLoad?: boolean) => void;
   onLogout: () => void;
 }
 
@@ -25,7 +25,7 @@ export default function Sidebar({ activeId, onSelect, onLogout }: SidebarProps) 
     manual: true,
     onSuccess: (conv) => {
       void fetchConversations();
-      onSelect(conv.id);
+      onSelect(conv.id, true);
     },
   });
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 
-type SSEEvent = { type: 'token'; content: string } | { type: 'done'; messageId: string };
+type SSEEvent = { type: 'token'; content: string } | { type: 'done'; content: string };
 
 function createStreamMock() {
   let resolver: ((value: SSEEvent) => void) | null = null;
@@ -114,7 +114,7 @@ describe('useSSE', () => {
     });
 
     act(() => {
-      mock.pushEvent({ type: 'done', messageId: 'msg_1' });
+      mock.pushEvent({ type: 'done', content: '答' });
     });
 
     await waitFor(() => {

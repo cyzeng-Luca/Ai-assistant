@@ -40,12 +40,12 @@ export default function ChatPage() {
 
   const activeConversation = conversations.find((c) => c.id === activeId);
 
-  const handleSelect = (id: string) => {
+  const handleSelect = (id: string, skipLoad?: boolean) => {
     if (id === activeId) return;
     resetSSE();
     clearMessages();
     setActiveId(id);
-    void loadMessages(id);
+    if (!skipLoad) void loadMessages(id);
     if (isMobile) setDrawerOpen(false);
   };
 
@@ -59,8 +59,10 @@ export default function ChatPage() {
     if (!activeId) return;
     addMessage({ id: crypto.randomUUID(), role: 'user', content });
     sendMessage(activeId, content);
-    await api.updateConversationTitle(activeId, content);
-    void fetchConversations();
+    if (!activeConversation?.title) {
+      await api.updateConversationTitle(activeId, content);
+      void fetchConversations();
+    }
   };
 
   const chatContent = (

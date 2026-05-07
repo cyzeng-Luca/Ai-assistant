@@ -49,9 +49,9 @@ export default function LoginPage() {
               }}
             />
           )}
-          <Typography.Text type="secondary">输入您的用户 ID 以开始使用</Typography.Text>
+          <Typography.Text type="secondary">输入您的用户名以开始使用</Typography.Text>
           <Input
-            placeholder="输入用户 ID"
+            placeholder="输入用户名"
             prefix={<UserOutlined />}
             value={username}
             onChange={(e) => {

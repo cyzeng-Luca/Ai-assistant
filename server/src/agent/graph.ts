@@ -1,10 +1,11 @@
 import { StateGraph, MessagesAnnotation, END, START } from '@langchain/langgraph';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
-import { AIMessage, SystemMessage } from '@langchain/core/messages';
+import { AIMessage, AIMessageChunk, HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { ChatDeepSeek } from '@langchain/deepseek';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { env } from '../config.js';
 import { ragSearchTool } from './tools/ragSearch.js';
+import { getCheckpointer } from './checkpointer.js';
 
 const model = new ChatDeepSeek({
   apiKey: env.DEEPSEEK_API_KEY,
@@ -16,10 +17,17 @@ const model = new ChatDeepSeek({
 const SYSTEM_PROMPT = `你是一个 SaaS 模块查询助手。你可以使用 rag_search 工具搜索内部知识库中的文档。
 请根据用户的问题提供准确、简洁的回答。
 如果有参考文档，请优先基于文档内容回答，并注明信息来源。
-如果没有参考文档，请基于你的知识诚实回答。`;
+如果没有参考文档，请说不知道。`;
 
 const modelWithTools = model.bindTools([ragSearchTool]);
 const toolNode = new ToolNode([ragSearchTool]);
+
+function withLogging(name: string, fn: any): any {
+  return async (state: any, config?: any) => {
+    const result = await fn(state, config);
+    return result;
+  };
+}
 
 async function agentNode(
   state: typeof MessagesAnnotation.State,
@@ -27,15 +35,15 @@ async function agentNode(
 ): Promise<Partial<typeof MessagesAnnotation.State>> {
   const onToken = config?.configurable?.onToken as ((t: string) => void) | undefined;
 
-  const response = await modelWithTools.invoke([
-    new SystemMessage(SYSTEM_PROMPT),
-    ...state.messages,
-  ]);
+  let response: AIMessageChunk = new AIMessageChunk({ content: '' });
+  const stream = await modelWithTools.stream([new SystemMessage(SYSTEM_PROMPT), ...state.messages]);
 
-  // Only stream final answers (not intermediate tool-calling responses)
-  const content = typeof response.content === 'string' ? response.content : '';
-  if (onToken && content && !response.tool_calls?.length) {
-    onToken(content);
+  for await (const chunk of stream) {
+    response = response.concat(chunk);
+    // 工具调用时 chunk.content 为空，自然不会推流中间状态
+    if (onToken && typeof chunk.content === 'string' && chunk.content) {
+      onToken(chunk.content);
+    }
   }
 
   return { messages: [response] };
@@ -43,32 +51,52 @@ async function agentNode(
 
 function shouldContinue(state: typeof MessagesAnnotation.State): 'tools' | typeof END {
   const lastMsg = state.messages[state.messages.length - 1];
-  if (lastMsg instanceof AIMessage && lastMsg.tool_calls?.length) {
+  if (
+    (lastMsg instanceof AIMessage || lastMsg instanceof AIMessageChunk) &&
+    lastMsg.tool_calls?.length
+  ) {
     return 'tools';
   }
   return END;
 }
 
-const workflow = new StateGraph(MessagesAnnotation)
-  .addNode('agent', agentNode)
-  .addNode('tools', toolNode)
-  .addEdge(START, 'agent')
-  .addConditionalEdges('agent', shouldContinue)
-  .addEdge('tools', 'agent');
-
-const agentGraph = workflow.compile();
+async function getGraph() {
+  const checkpointer = await getCheckpointer();
+  return new StateGraph(MessagesAnnotation)
+    .addNode('agent', withLogging('agent', agentNode))
+    .addNode(
+      'tools',
+      withLogging('tools', (state: any, config?: any) => toolNode.invoke(state, config)),
+    )
+    .addEdge(START, 'agent')
+    .addConditionalEdges('agent', shouldContinue)
+    .addEdge('tools', 'agent')
+    .compile({ checkpointer: checkpointer as any });
+}
 
 export type AgentState = typeof MessagesAnnotation.State;
 
-export async function runAgent(state: AgentState): Promise<AgentState> {
-  return agentGraph.invoke(state);
+// Lazy-compiled graph for LangGraph CLI
+let _graph: Awaited<ReturnType<typeof getGraph>> | null = null;
+export async function graph() {
+  if (!_graph) _graph = await getGraph();
+  return _graph;
 }
 
 export async function runAgentStream(
-  state: AgentState,
+  threadId: string,
+  userMessage: string,
   callbacks: { onToken: (token: string) => void },
 ): Promise<AgentState> {
-  return agentGraph.invoke(state, {
-    configurable: { onToken: callbacks.onToken },
-  });
+  const graph = await getGraph();
+  return graph.invoke(
+    { messages: [new HumanMessage(userMessage)] },
+    { configurable: { thread_id: threadId, onToken: callbacks.onToken } },
+  );
+}
+
+export async function getMessages(threadId: string): Promise<AgentState['messages']> {
+  const checkpointer = await getCheckpointer();
+  const tuple = await checkpointer.getTuple({ configurable: { thread_id: threadId } });
+  return (tuple?.checkpoint.channel_values as AgentState | undefined)?.messages ?? [];
 }

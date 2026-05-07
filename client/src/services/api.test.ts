@@ -44,9 +44,9 @@ describe('login', () => {
     await expect(api.login('zeng')).rejects.toThrow('boom');
   });
 
-  it('throws default message when response body is empty', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse('not json', false, 500));
-    await expect(api.login('zeng')).rejects.toThrow('登录失败');
+  it('throws fallback message when response body has no error field', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse({}, false, 500));
+    await expect(api.login('zeng')).rejects.toThrow('请求失败 (500)');
   });
 });
 
@@ -59,7 +59,7 @@ describe('createConversation', () => {
 
   it('throws on failure', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse(null, false));
-    await expect(api.createConversation()).rejects.toThrow('创建会话失败');
+    await expect(api.createConversation()).rejects.toThrow('请求失败 (200)');
   });
 });
 
@@ -72,7 +72,7 @@ describe('getConversations', () => {
 
   it('throws on failure', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse(null, false));
-    await expect(api.getConversations()).rejects.toThrow('获取会话列表失败');
+    await expect(api.getConversations()).rejects.toThrow('请求失败 (200)');
   });
 });
 
@@ -85,7 +85,7 @@ describe('getConversation', () => {
 
   it('throws on failure', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse(null, false));
-    await expect(api.getConversation('1')).rejects.toThrow('获取会话详情失败');
+    await expect(api.getConversation('1')).rejects.toThrow('请求失败 (200)');
   });
 });
 
@@ -98,7 +98,7 @@ describe('updateConversationTitle', () => {
 
   it('throws on failure', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse(null, false));
-    await expect(api.updateConversationTitle('1', 'hello')).rejects.toThrow('生成标题失败');
+    await expect(api.updateConversationTitle('1', 'hello')).rejects.toThrow('请求失败 (200)');
   });
 });
 
@@ -110,7 +110,7 @@ describe('streamMessage', () => {
       mockSSEBody(
         sseData('token', { content: '你' }),
         sseData('token', { content: '好' }),
-        sseData('done', { messageId: 'msg_1' }),
+        sseData('done', { content: 'msg_1' }),
       ),
     );
 
@@ -122,7 +122,7 @@ describe('streamMessage', () => {
     expect(events).toEqual([
       { type: 'token', content: '你' },
       { type: 'token', content: '好' },
-      { type: 'done', messageId: 'msg_1' },
+      { type: 'done', content: 'msg_1' },
     ]);
   });
 
@@ -134,7 +134,7 @@ describe('streamMessage', () => {
         void __unused;
       }
     };
-    await expect(collect()).rejects.toThrow('发送消息失败');
+    await expect(collect()).rejects.toThrow('请求失败 (200)');
   });
 
   it('throws on error event from server', async () => {

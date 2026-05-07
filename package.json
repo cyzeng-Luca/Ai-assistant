@@ -21,6 +21,11 @@
       "bash -c 'cd server && npx eslint --fix --no-warn-ignored \"$@\"' bash"
     ]
   },
+  "pnpm": {
+    "overrides": {
+      "openai": "^6.36.0"
+    }
+  },
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",
     "@commitlint/config-conventional": "^19.0.0",

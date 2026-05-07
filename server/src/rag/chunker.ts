@@ -26,21 +26,105 @@ export async function parseDocument(filePath: string): Promise<string> {
   return fs.readFileSync(filePath, 'utf-8');
 }
 
-// ── Recursive semantic chunking ───────────────────────────
+// ── Sentence-aware chunking with overlap ──────────────────
 
-const SEPARATORS: [RegExp, boolean][] = [
-  [/^#{1,3}\s/m, true],
-  [/\n\n+/, false],
-  [/[。！？\n]+/, true],
-  [/[，、；,;]+/, true],
-  [/\s+/, true],
-];
+/**
+ * Split text into sentences, preserving delimiters at the end of each sentence.
+ */
+function splitSentences(text: string): string[] {
+  const sentences: string[] = [];
+  // Match sentence-ending punctuation followed by whitespace or end of string.
+  // Uses capturing group to keep the delimiter attached.
+  const re = /[^。！？\n]+[。！？\n]+/g;
+  let match: RegExpExecArray | null;
+  let lastEnd = 0;
 
-function splitByRegex(text: string, regex: RegExp): string[] {
-  return text
-    .split(regex)
-    .map((p) => p.trim())
-    .filter(Boolean);
+  while ((match = re.exec(text)) !== null) {
+    // Capture any content between the last match and this one (orphan prefix)
+    const gap = text.slice(lastEnd, match.index).trim();
+    if (gap) sentences.push(gap);
+    sentences.push(match[0]);
+    lastEnd = match.index + match[0].length;
+  }
+
+  // Remaining text after the last sentence-ending punctuation
+  const tail = text.slice(lastEnd).trim();
+  if (tail) sentences.push(tail);
+
+  return sentences;
+}
+
+/**
+ * Split a single sentence into clauses (，；,;), preserving delimiters.
+ */
+function splitClauses(text: string): string[] {
+  const re = /[^，；,;\n]+[，；,;\n]*/g;
+  const parts: string[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = re.exec(text)) !== null) {
+    parts.push(match[0]);
+  }
+
+  return parts.length > 0 ? parts : [text];
+}
+
+/**
+ * Build chunks from pieces by greedily filling to `size`, with `overlap`
+ * characters carried over from the end of the previous chunk.
+ *
+ * When a single piece exceeds `size`, it is split at clause boundaries;
+ * if still too large, character-level split with overlap is used.
+ */
+function buildChunks(pieces: string[], size: number, overlap: number): string[] {
+  const chunks: string[] = [];
+  let current = '';
+
+  for (const piece of pieces) {
+    if (current.length === 0) {
+      // First piece or fresh start
+      if (piece.length <= size) {
+        current = piece;
+      } else {
+        // Single piece too large — split further
+        const subPieces = splitClauses(piece);
+        if (subPieces.length > 1) {
+          chunks.push(...buildChunks(subPieces, size, overlap));
+        } else {
+          // Fallback: character-level split with overlap
+          for (let i = 0; i < piece.length; i += size - overlap) {
+            const end = Math.min(i + size, piece.length);
+            chunks.push(piece.slice(i, end));
+            if (end === piece.length) break;
+          }
+        }
+      }
+    } else if (current.length + piece.length <= size) {
+      current += piece;
+    } else {
+      // Current chunk is full — push it
+      chunks.push(current);
+
+      // Start next chunk with overlap from the end of current
+      const carryLen = Math.min(overlap, current.length);
+      const carry = current.slice(-carryLen);
+      current = carry + piece;
+
+      // If even after adding overlap + first piece we exceed size,
+      // we may need to split this piece
+      if (current.length > size) {
+        const subPieces = splitClauses(piece);
+        if (subPieces.length > 1) {
+          chunks.push(...buildChunks([carry, ...subPieces], size, overlap));
+          current = '';
+        }
+        // Otherwise just let it be oversized for one round
+      }
+    }
+  }
+
+  if (current.length > 0) chunks.push(current);
+  return chunks;
 }
 
 export function chunkText(
@@ -51,36 +135,8 @@ export function chunkText(
   if (!text.trim()) return [];
   if (text.length <= size) return [text.trim()];
 
-  for (const [regex] of SEPARATORS) {
-    const segments = splitByRegex(text, regex);
-    if (segments.length > 1) {
-      const subChunks: string[] = [];
-      for (const seg of segments) {
-        subChunks.push(...chunkText(seg, size, overlap));
-      }
-      return mergeWithOverlap(subChunks, size, overlap);
-    }
-  }
-
-  const chars: string[] = [];
-  for (const ch of text) chars.push(ch);
-  return mergeWithOverlap(chars, size, overlap);
-}
-
-function mergeWithOverlap(segments: string[], size: number, overlap: number): string[] {
-  const chunks: string[] = [];
-  let current = '';
-
-  for (const seg of segments) {
-    if (current.length + seg.length > size && current.length > 0) {
-      chunks.push(current.trim());
-      current = current.slice(-Math.min(overlap, current.length)) + seg;
-    } else {
-      current += seg;
-    }
-  }
-  if (current.trim()) chunks.push(current.trim());
-  return chunks.length ? chunks : segments;
+  const sentences = splitSentences(text);
+  return buildChunks(sentences, size, overlap);
 }
 
 // ── File / Directory ──────────────────────────────────────

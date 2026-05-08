@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:debug": "NODE_OPTIONS='--inspect=9230' node --import tsx/esm --watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint src/",
@@ -20,6 +21,7 @@
   },
   "dependencies": {
     "@chonkiejs/core": "^0.0.9",
+    "@langchain/anthropic": "^1.3.29",
     "@langchain/core": "^1.0.0",
     "@langchain/deepseek": "^1.0.25",
     "@langchain/langgraph": "^1.2.9",

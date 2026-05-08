@@ -7,6 +7,9 @@ const model = new ChatDeepSeek({
   model: env.DEEPSEEK_MODEL,
   configuration: { baseURL: env.DEEPSEEK_BASE_URL },
   streaming: true,
+  modelKwargs: {
+    thinking: { type: 'disabled' },
+  },
 });
 
 const SYSTEM_PROMPT = `你是一个 SaaS 模块查询助手。请根据用户的问题提供准确、简洁的回答。

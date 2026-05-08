@@ -29,13 +29,14 @@ export default function ChatPage() {
 
   const {
     tokens,
+    streamingId,
     isStreaming,
     error,
     sendMessage,
     stopStreaming,
     reset: resetSSE,
-  } = useSSE((fullAnswer) => {
-    addMessage({ id: crypto.randomUUID(), role: 'assistant', content: fullAnswer });
+  } = useSSE((sid, fullAnswer) => {
+    addMessage({ id: sid, role: 'assistant', content: fullAnswer });
   });
 
   const activeConversation = conversations.find((c) => c.id === activeId);
@@ -72,6 +73,8 @@ export default function ChatPage() {
         streamingError={error}
         messages={messages}
         loading={messagesLoading}
+        streamingId={streamingId}
+        isStreaming={isStreaming}
       />
       <ChatInput
         onSend={(content) => {

@@ -16,3 +16,28 @@ export const ragSearchTool = tool(
     }),
   },
 );
+export const weatherSearchTool = tool(
+  ({ city }: { city: string }) => {
+    return `${city}天气：晴天，25°C，微风。`;
+  },
+  {
+    name: 'weather_search',
+    description: '搜索指定城市的天气信息。当用户询问当前天气、预报等天气相关问题时使用此工具。',
+    schema: z.object({
+      city: z.string().describe('城市名称，例如北京、上海、深圳'),
+    }),
+  },
+);
+
+export const positionSearchTool = tool(
+  ({ ip }: { ip: string }) => {
+    return `IP ${ip} 位置：成都，中国。`;
+  },
+  {
+    name: 'position_search',
+    description: '搜索IP地址的地理位置信息。当用户询问当前位置、地址等位置相关问题时使用此工具。',
+    schema: z.object({
+      ip: z.string().describe('要查询的IP地址'),
+    }),
+  },
+);

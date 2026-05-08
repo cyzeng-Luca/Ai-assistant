@@ -6,30 +6,57 @@ import * as conv from '../services/conversation.js';
 import { generateTitle } from '../services/llm.js';
 import { v4 as uuid } from 'uuid';
 
+/** Extract text from streaming chunk content — handles Anthropic content-block arrays */
+function extractChunkText(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content
+      .filter(
+        (b): b is { type: 'text'; text: string } | { type: 'text_delta'; text: string } =>
+          b.type === 'text' || b.type === 'text_delta',
+      )
+      .map((b) => b.text)
+      .join('');
+  }
+  return '';
+}
+
 export const conversationRouter: Router = Router();
+
+/** Extract display text from message content (handles Anthropic array-format content blocks) */
+function extractText(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content
+      .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
+      .map((b) => b.text)
+      .join('');
+  }
+  return '';
+}
 
 /** Convert LangChain checkpoint messages to frontend-safe format */
 function formatMessages(
   lcMessages: any[],
 ): { id: string; role: 'user' | 'assistant'; content: string }[] {
-  return lcMessages
-    .filter((m) => {
-      if (m instanceof ToolMessage) return false;
-      if (
-        (m instanceof AIMessage || m instanceof AIMessageChunk) &&
-        (m.tool_calls?.length || (m as any).tool_call_chunks?.length)
-      )
-        return false;
-      return m instanceof HumanMessage || m instanceof AIMessage || m instanceof AIMessageChunk;
-    })
-    .map(
-      (m) =>
-        ({
-          id: m.id ?? uuid(),
-          role: m instanceof HumanMessage ? 'user' : 'assistant',
-          content: typeof m.content === 'string' ? m.content : '',
-        }) satisfies { id: string; role: 'user' | 'assistant'; content: string },
-    );
+  const filter = lcMessages.filter((m) => {
+    if (m instanceof ToolMessage) return false;
+    if (
+      (m instanceof AIMessage || m instanceof AIMessageChunk) &&
+      (m.tool_calls?.length || (m as any).tool_call_chunks?.length)
+    )
+      return false;
+    return m instanceof HumanMessage || m instanceof AIMessage || m instanceof AIMessageChunk;
+  });
+  const result = filter.map(
+    (m) =>
+      ({
+        id: m.id ?? uuid(),
+        role: m instanceof HumanMessage ? 'user' : 'assistant',
+        content: extractText(m.content),
+      }) satisfies { id: string; role: 'user' | 'assistant'; content: string },
+  );
+  return result;
 }
 
 // POST /api/conversations — 新建会话
@@ -115,18 +142,25 @@ conversationRouter.post('/:id/messages', async (req, res) => {
   };
 
   try {
-    const result = await runAgentStream(req.params.id, content, {
-      onToken: (token) => {
-        send('token', { content: token });
-      },
-    });
+    const stream = await runAgentStream(req.params.id, content);
 
-    // Extract final answer from last AI message
-    const lastMsg = result.messages.at(-1);
-    const answer = typeof lastMsg?.content === 'string' ? lastMsg.content : '';
+    for await (const [chunk] of stream) {
+      if (chunk instanceof ToolMessage) continue;
+      if ('tool_call_chunks' in chunk && (chunk.tool_call_chunks as any[]).length) continue;
+      const text = extractChunkText(chunk.content);
+      if (text) {
+        send('token', { content: text });
+      }
+    }
+
+    // After stream ends, read final answer from checkpointer
+    const messages = await getMessages(req.params.id);
+    const lastMsg = messages.at(-1);
+    const answer = extractText(lastMsg?.content);
 
     send('done', { content: answer });
-  } catch {
+  } catch (error) {
+    console.error('Error generating answer:', error);
     sendError('生成回答失败，请稍后重试');
   } finally {
     res.end();

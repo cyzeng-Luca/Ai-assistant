@@ -3,6 +3,7 @@ import { streamMessage } from '@services/api';
 
 interface UseSSEReturn {
   tokens: string;
+  streamingId: string;
   isStreaming: boolean;
   error: string | null;
   sendMessage: (conversationId: string, content: string) => void;
@@ -10,8 +11,11 @@ interface UseSSEReturn {
   reset: () => void;
 }
 
-export function useSSE(onStreamComplete?: (fullAnswer: string) => void): UseSSEReturn {
+export function useSSE(
+  onStreamComplete?: (streamingId: string, fullAnswer: string) => void,
+): UseSSEReturn {
   const [tokens, setTokens] = useState('');
+  const [streamingId, setStreamingId] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
@@ -19,6 +23,8 @@ export function useSSE(onStreamComplete?: (fullAnswer: string) => void): UseSSER
   const sendMessage = useCallback(
     (conversationId: string, content: string) => {
       controllerRef.current?.abort();
+      const id = crypto.randomUUID();
+      setStreamingId(id);
       setTokens('');
       setError(null);
       setIsStreaming(true);
@@ -36,7 +42,9 @@ export function useSSE(onStreamComplete?: (fullAnswer: string) => void): UseSSER
                 setTokens(full);
                 break;
               case 'done':
-                onStreamComplete?.(full);
+                onStreamComplete?.(id, full);
+                setIsStreaming(false);
+                setTokens('');
                 break;
             }
           }
@@ -60,9 +68,10 @@ export function useSSE(onStreamComplete?: (fullAnswer: string) => void): UseSSER
   const reset = useCallback(() => {
     controllerRef.current?.abort();
     setTokens('');
+    setStreamingId('');
     setIsStreaming(false);
     setError(null);
   }, []);
 
-  return { tokens, isStreaming, error, sendMessage, stopStreaming, reset };
+  return { tokens, streamingId, isStreaming, error, sendMessage, stopStreaming, reset };
 }

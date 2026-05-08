@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Avatar, Typography, Alert, Spin } from 'antd';
 import { UserOutlined, RobotOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
@@ -9,9 +9,19 @@ interface MessageListProps {
   streamingError: string | null;
   messages: Message[];
   loading: boolean;
+  streamingId: string;
+  isStreaming: boolean;
 }
 
-function Bubble({ role, content }: { role: string; content: string }) {
+function Bubble({
+  role,
+  content,
+  showTyping,
+}: {
+  role: string;
+  content: string;
+  showTyping?: boolean;
+}) {
   const isUser = role === 'user';
   return (
     <div className={`flex flex-row px-4 py-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -24,14 +34,14 @@ function Bubble({ role, content }: { role: string; content: string }) {
           size={36}
         />
         <div
-          className={`px-3.5 py-2.5 rounded-lg break-words ${isUser ? 'bg-ant-blue text-white' : 'bg-ant-gray-100 text-black'}`}
+          className={`px-3.5 py-2.5 rounded-lg break-words ${isUser ? 'bg-ant-blue text-white' : 'bg-ant-gray-100 text-black'} ${showTyping ? 'typing-cursor' : ''}`}
         >
           {isUser ? (
             <Typography.Paragraph className="!m-0 whitespace-pre-wrap !text-inherit">
-              {content}
+              {content || ' '}
             </Typography.Paragraph>
           ) : (
-            <ReactMarkdown>{content}</ReactMarkdown>
+            <ReactMarkdown>{content || ' '}</ReactMarkdown>
           )}
         </div>
       </div>
@@ -44,6 +54,8 @@ export default function MessageList({
   streamingError,
   messages,
   loading,
+  streamingId,
+  isStreaming,
 }: MessageListProps) {
   const hasStreaming = streamingContent.length > 0;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -67,7 +79,7 @@ export default function MessageList({
   }, [messages.length]);
 
   useEffect(() => {
-    if (!hasStreaming) return;
+    if (!isStreaming) return;
     let rafId: number;
     const tick = () => {
       if (isAtBottomRef.current) {
@@ -80,7 +92,16 @@ export default function MessageList({
     return () => {
       cancelAnimationFrame(rafId);
     };
-  }, [hasStreaming]);
+  }, [isStreaming]);
+
+  const displayMessages = useMemo(() => {
+    if ((!isStreaming && !hasStreaming) || !streamingId) return messages;
+    if (messages.some((m) => m.id === streamingId)) return messages;
+    return [
+      ...messages,
+      { id: streamingId, role: 'assistant' as const, content: streamingContent },
+    ];
+  }, [messages, hasStreaming, streamingContent, streamingId, isStreaming]);
 
   return (
     <div
@@ -99,11 +120,14 @@ export default function MessageList({
         </div>
       )}
 
-      {messages.map((msg) => (
-        <Bubble key={msg.id} role={msg.role} content={msg.content} />
+      {displayMessages.map((msg) => (
+        <Bubble
+          key={msg.id}
+          role={msg.role}
+          content={msg.content}
+          showTyping={msg.id === streamingId && isStreaming}
+        />
       ))}
-
-      {hasStreaming && <Bubble role="assistant" content={streamingContent} />}
 
       <div />
     </div>

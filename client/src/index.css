@@ -6,3 +6,29 @@
   --color-ant-blue: #1677ff;
   --color-ant-green: #52c41a;
 }
+
+@keyframes typing-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.typing-cursor {
+  position: relative;
+}
+
+.typing-cursor::after {
+  content: '';
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #1677ff;
+  animation: typing-blink 1s ease-in-out infinite;
+}

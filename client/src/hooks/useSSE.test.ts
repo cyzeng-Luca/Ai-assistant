@@ -120,7 +120,7 @@ describe('useSSE', () => {
     await waitFor(() => {
       expect(result.current.isStreaming).toBe(false);
       expect(result.current.tokens).toBe('');
-      expect(onComplete).toHaveBeenCalledWith('答');
+      expect(onComplete).toHaveBeenCalledWith(expect.any(String), '答');
     });
   });
 

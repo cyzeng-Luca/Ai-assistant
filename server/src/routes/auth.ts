@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { loginUser } from '../services/auth.js';
+import { loginUser } from '@services/auth.js';
+import { signToken } from '@lib/jwt.js';
 
 export const authRouter: Router = Router();
 
@@ -11,5 +12,6 @@ authRouter.post('/login', async (req, res) => {
   }
 
   const user = await loginUser(username);
-  res.json({ id: user.id, username: user.username, createdAt: user.createdAt });
+  const token = signToken(user.id, user.username);
+  res.json({ token, user: { id: user.id, username: user.username, createdAt: user.createdAt } });
 });

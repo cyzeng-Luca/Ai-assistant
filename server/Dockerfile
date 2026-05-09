@@ -18,10 +18,11 @@ FROM node:22-alpine AS runtime
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --from=builder /app/src ./src
 
 EXPOSE 3001
 CMD ["pnpm", "start"]

@@ -1,5 +1,5 @@
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
-import { env } from '../config.js';
+import { env } from '@lib/config.js';
 
 let checkpointerPromise: Promise<PostgresSaver> | null = null;
 

@@ -1,5 +1,9 @@
 version: "3.8"
 
+# Local development — infrastructure only (no server)
+# Start:  docker compose -f docker-compose.local.yml up -d
+# Stop:   docker compose -f docker-compose.local.yml down
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -45,29 +49,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
-  server:
-    build: ./server
-    container_name: module-assistant-server
-    ports:
-      - "${SERVER_PORT:-3001}:3001"
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - CHROMA_URL=${CHROMA_URL:-http://chromadb:8000}
-      - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=${JWT_SECRET}
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
-      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
-      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-v4-pro}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-https://api.deepseek.com/anthropic}
-      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-deepseek-v4-pro}
-      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
 volumes:
   pgdata:

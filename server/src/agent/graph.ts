@@ -4,8 +4,8 @@ import { AIMessageChunk, HumanMessage, SystemMessage } from '@langchain/core/mes
 import { ChatDeepSeek } from '@langchain/deepseek';
 // import { ChatAnthropic } from '@langchain/anthropic';
 import type { RunnableConfig } from '@langchain/core/runnables';
-import { env } from '../config.js';
-import { ragSearchTool, weatherSearchTool, positionSearchTool } from './tools/ragSearch.js';
+import { env } from '@lib/config.js';
+import { ragSearchTool } from './tools/ragSearch.js';
 import { getCheckpointer } from './checkpointer.js';
 
 // ---- DeepSeek ----
@@ -35,14 +35,10 @@ const SYSTEM_PROMPT = `你是一个 SaaS 模块查询助手。你可以使用 ra
 如果有参考文档，请优先基于文档内容回答，并注明信息来源。
 如果没有参考文档，请说不知道。`;
 
-const modelWithTools = model.bindTools([
-  ragSearchTool,
-  weatherSearchTool,
-  positionSearchTool,
-] as any);
-const toolNode = new ToolNode([ragSearchTool, weatherSearchTool, positionSearchTool] as any);
+const modelWithTools = model.bindTools([ragSearchTool] as any);
+const toolNode = new ToolNode([ragSearchTool] as any);
 
-function withLogging(name: string, fn: any): any {
+function withLogging(_name: string, fn: any): any {
   return async (state: any, config?: any) => {
     const result = await fn(state, config);
     return result;

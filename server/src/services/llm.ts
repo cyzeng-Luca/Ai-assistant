@@ -1,6 +1,6 @@
 import { ChatDeepSeek } from '@langchain/deepseek';
 import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages';
-import { env } from '../config.js';
+import { env } from '@lib/config.js';
 
 const model = new ChatDeepSeek({
   apiKey: env.DEEPSEEK_API_KEY,

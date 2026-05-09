@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { AIMessage, AIMessageChunk, HumanMessage, ToolMessage } from '@langchain/core/messages';
-import { runAgentStream, getMessages } from '../agent/graph.js';
-import { getCheckpointer } from '../agent/checkpointer.js';
-import * as conv from '../services/conversation.js';
-import { generateTitle } from '../services/llm.js';
+import { getMessages, runAgentStream } from '@agent/graph.js';
+import { getCheckpointer } from '@agent/checkpointer.js';
+import * as conv from '@services/conversation.js';
+import { generateTitle } from '@services/llm.js';
 import { v4 as uuid } from 'uuid';
+import { llmLimiter } from '@middleware/rateLimit.js';
+import { conversationGuard } from '@middleware/conversationGuard.js';
+import { logger } from '@lib/logger.js';
 
-/** Extract text from streaming chunk content — handles Anthropic content-block arrays */
 function extractChunkText(content: unknown): string {
   if (typeof content === 'string') return content;
   if (Array.isArray(content)) {
@@ -21,9 +23,6 @@ function extractChunkText(content: unknown): string {
   return '';
 }
 
-export const conversationRouter: Router = Router();
-
-/** Extract display text from message content (handles Anthropic array-format content blocks) */
 function extractText(content: unknown): string {
   if (typeof content === 'string') return content;
   if (Array.isArray(content)) {
@@ -59,6 +58,8 @@ function formatMessages(
   return result;
 }
 
+export const conversationRouter: Router = Router();
+
 // POST /api/conversations — 新建会话
 conversationRouter.post('/', async (req, res) => {
   const conversation = await conv.createConversation(
@@ -78,31 +79,27 @@ conversationRouter.get('/', async (req, res) => {
 });
 
 // GET /api/conversations/:id — 会话详情（含历史消息，从 checkpoint 读取）
-conversationRouter.get('/:id', async (req, res) => {
-  const conversation = await conv.getConversationMeta(req.params.id);
-  if (!conversation) {
-    res.status(404).json({ error: '会话不存在' });
-    return;
-  }
+conversationRouter.get('/:id', conversationGuard, async (req, res) => {
+  const conversation = await conv.getConversationMeta(req.params.id as string);
 
-  const messages = await getMessages(req.params.id);
+  const messages = await getMessages(req.params.id as string);
   res.json({
-    id: conversation.id,
-    title: conversation.title,
+    id: (conversation as { id: string }).id,
+    title: (conversation as { title: string | null }).title,
     messages: formatMessages(messages),
   });
 });
 
 // DELETE /api/conversations/:id — 删除会话
-conversationRouter.delete('/:id', async (req, res) => {
-  await conv.deleteConversation(req.params.id);
+conversationRouter.delete('/:id', conversationGuard, async (req, res) => {
+  await conv.deleteConversation(req.params.id as string);
   const cp = await getCheckpointer();
-  await cp.deleteThread(req.params.id);
+  await cp.deleteThread(req.params.id as string);
   res.json({ success: true });
 });
 
 // PATCH /api/conversations/:id/title — 生成标题（LLM 总结）
-conversationRouter.patch('/:id/title', async (req, res) => {
+conversationRouter.patch('/:id/title', conversationGuard, async (req, res) => {
   try {
     const { content } = req.body as { content?: string };
     if (!content?.trim()) {
@@ -110,7 +107,7 @@ conversationRouter.patch('/:id/title', async (req, res) => {
       return;
     }
     const title = await generateTitle(content);
-    const updated = await conv.updateConversationTitle(req.params.id, title);
+    const updated = await conv.updateConversationTitle(req.params.id as string, title);
     res.json(updated);
   } catch {
     res.status(500).json({ error: '生成标题失败' });
@@ -119,9 +116,10 @@ conversationRouter.patch('/:id/title', async (req, res) => {
 
 // POST /api/conversations/:id/messages — 发送消息，SSE 流式返回
 // checkpoint 自动管理消息历史，无需手动存取
-conversationRouter.post('/:id/messages', async (req, res) => {
-  const { content } = req.body as { content?: string };
-  if (!content?.trim()) {
+conversationRouter.post('/:id/messages', llmLimiter, conversationGuard, async (req, res) => {
+  const body = req.body as { content?: string };
+  const content = (body.content ?? '').trim();
+  if (!content) {
     res.status(400).json({ error: '消息内容不能为空' });
     return;
   }
@@ -136,32 +134,27 @@ conversationRouter.post('/:id/messages', async (req, res) => {
     res.write(`data: ${JSON.stringify({ type, ...payload })}\n\n`);
   }
 
-  const sendError = (message: string) => {
-    send('error', { message });
-    res.end();
-  };
+  const threadId = req.params.id as string;
+  logger.info({ threadId }, 'Calling LLM');
 
   try {
-    const stream = await runAgentStream(req.params.id, content);
+    const stream = await runAgentStream(threadId, content);
+    let fullResponse = '';
 
     for await (const [chunk] of stream) {
       if (chunk instanceof ToolMessage) continue;
-      if ('tool_call_chunks' in chunk && (chunk.tool_call_chunks as any[]).length) continue;
+      if ('tool_call_chunks' in chunk && (chunk.tool_call_chunks as unknown[]).length) continue;
       const text = extractChunkText(chunk.content);
       if (text) {
+        fullResponse += text;
         send('token', { content: text });
       }
     }
 
-    // After stream ends, read final answer from checkpointer
-    const messages = await getMessages(req.params.id);
-    const lastMsg = messages.at(-1);
-    const answer = extractText(lastMsg?.content);
-
-    send('done', { content: answer });
+    send('done', { content: fullResponse });
   } catch (error) {
-    console.error('Error generating answer:', error);
-    sendError('生成回答失败，请稍后重试');
+    logger.error({ err: error, threadId }, 'LLM call failed');
+    send('error', { message: '生成回答失败，请稍后重试' });
   } finally {
     res.end();
   }

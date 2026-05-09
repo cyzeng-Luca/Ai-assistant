@@ -13,9 +13,17 @@
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@agent/*": ["./agent/*"],
+      "@lib/*": ["./lib/*"],
+      "@middleware/*": ["./middleware/*"],
+      "@queue/*": ["./queue/*"],
+      "@rag/*": ["./rag/*"],
+      "@routes/*": ["./routes/*"],
+      "@services/*": ["./services/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

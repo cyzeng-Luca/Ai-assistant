@@ -1,7 +1,7 @@
 import { ChromaClient } from 'chromadb';
 import { v4 as uuid } from 'uuid';
 import Fuse from 'fuse.js';
-import { env } from '../config.js';
+import { env } from '@lib/config.js';
 import { embedTexts, embedQuery } from './embedding.js';
 import type { Chunk } from './chunker.js';
 

@@ -1,17 +1,19 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { env } from './config.js';
-import { registerRoutes } from './routes/index.js';
+import { env } from '@lib/config.js';
+import { logger } from '@lib/logger.js';
+import { reqLogger } from '@middleware/logger.js';
+import { registerRoutes } from '@routes/index.js';
 
 const app = express();
 
+app.use(reqLogger);
 app.use(cors());
 app.use(express.json());
 
 registerRoutes(app);
 
 app.listen(env.SERVER_PORT, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Server running on port ${String(env.SERVER_PORT)}`);
+  logger.info({ port: env.SERVER_PORT }, `Server running on port ${String(env.SERVER_PORT)}`);
 });

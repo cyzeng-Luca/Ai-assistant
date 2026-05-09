@@ -10,14 +10,10 @@ const API_BASE = '/api/conversations';
 
 // --- Auth helpers ---
 
-function getUserId(): string | null {
-  return useAppStore.getState().user?.id ?? null;
-}
-
 function getAuthHeaders(): Record<string, string> {
-  const userId = getUserId();
-  if (!userId) return {};
-  return { 'x-user-id': userId };
+  const token = useAppStore.getState().user?.token;
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
 }
 
 function handleUnauthorized(serverMsg?: string): never {
@@ -61,12 +57,21 @@ async function request(url: string, options?: RequestInit): Promise<Response> {
 // --- Auth API ---
 
 export async function login(username: string): Promise<User> {
-  const res = await request('/api/auth/login', {
+  const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username }),
   });
-  return res.json() as Promise<User>;
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    const errMsg = (body as { error?: string } | null)?.error ?? `登录失败 (${String(res.status)})`;
+    throw new Error(errMsg);
+  }
+  const data = (await res.json()) as {
+    token: string;
+    user: { id: string; username: string; createdAt: string };
+  };
+  return { ...data.user, token: data.token };
 }
 
 // --- Conversation API ---

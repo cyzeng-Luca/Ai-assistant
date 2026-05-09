@@ -1,4 +1,4 @@
-import { db } from '../lib/prisma.js';
+import { db } from '@lib/prisma.js';
 
 export async function createConversation(userId: string, title?: string) {
   return db.conversation.create({
@@ -18,7 +18,7 @@ export async function getConversations(userId: string) {
 export async function getConversationMeta(conversationId: string) {
   return db.conversation.findUnique({
     where: { id: conversationId },
-    select: { id: true, title: true, createdAt: true },
+    select: { id: true, title: true, createdAt: true, userId: true },
   });
 }
 

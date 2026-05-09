@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { env } from '../config.js';
+import { env } from '@lib/config.js';
 
 const client = new OpenAI({
   apiKey: env.DASHSCOPE_API_KEY,

@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as crypto from 'node:crypto';
 import mammoth from 'mammoth';
-import { env } from '../config.js';
+import { env } from '@lib/config.js';
 
 export interface Chunk {
   content: string;

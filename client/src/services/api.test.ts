@@ -34,8 +34,10 @@ beforeEach(() => {
 
 describe('login', () => {
   it('returns user on success', async () => {
-    const user = { id: '1', username: 'zeng' };
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse(user));
+    const user = { id: '1', username: 'zeng', token: 'tok' };
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockResponse({ token: 'tok', user: { id: '1', username: 'zeng' } }),
+    );
     await expect(api.login('zeng')).resolves.toEqual(user);
   });
 
@@ -46,7 +48,7 @@ describe('login', () => {
 
   it('throws fallback message when response body has no error field', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse({}, false, 500));
-    await expect(api.login('zeng')).rejects.toThrow('请求失败 (500)');
+    await expect(api.login('zeng')).rejects.toThrow('登录失败 (500)');
   });
 });
 

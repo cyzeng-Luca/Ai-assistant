@@ -77,6 +77,7 @@ export default function ChatPage() {
         isStreaming={isStreaming}
       />
       <ChatInput
+        key={activeId}
         onSend={(content) => {
           void handleSend(content);
         }}

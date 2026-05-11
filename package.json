@@ -8,7 +8,9 @@
     "test": "pnpm --filter module-assistant-client test",
     "lint": "pnpm --filter module-assistant-client lint && pnpm --filter module-assistant-server lint",
     "format:check": "pnpm --filter module-assistant-client format:check && pnpm --filter module-assistant-server format:check",
-    "format": "pnpm --filter module-assistant-client format && pnpm --filter module-assistant-server format"
+    "format": "pnpm --filter module-assistant-client format && pnpm --filter module-assistant-server format",
+    "dev:infra": "docker compose -f docker-compose.local.yml up -d",
+    "dev:infra:down": "docker compose -f docker-compose.local.yml down"
   },
   "lint-staged": {
     "*.{ts,tsx,mjs,cjs,js,json,css,html,md}": [

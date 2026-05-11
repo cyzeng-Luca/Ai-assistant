@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
+import { generateUUID } from '@lib/uuid';
 import { streamMessage } from '@services/api';
 
 interface UseSSEReturn {
@@ -23,7 +24,7 @@ export function useSSE(
   const sendMessage = useCallback(
     (conversationId: string, content: string) => {
       controllerRef.current?.abort();
-      const id = crypto.randomUUID();
+      const id = generateUUID();
       setStreamingId(id);
       setTokens('');
       setError(null);

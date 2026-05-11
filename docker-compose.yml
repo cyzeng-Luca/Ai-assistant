@@ -2,7 +2,7 @@ name: module-assistant-prod
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: crpi-sopllrs9xzm8ebi5.cn-beijing.personal.cr.aliyuncs.com/luca_z/luca_z_z:postgres-latest
     container_name: module-assistant-db
     restart: unless-stopped
     environment:
@@ -20,7 +20,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: crpi-sopllrs9xzm8ebi5.cn-beijing.personal.cr.aliyuncs.com/luca_z/luca_z_z:redis-latest
     container_name: module-assistant-redis
     restart: unless-stopped
     ports:
@@ -34,9 +34,7 @@ services:
       retries: 5
 
   server:
-    image: cyzeng/module-assistant-server:latest
-    # build context 是根目录，因为 pnpm workspace 的 lockfile 在根目录
-    # Dockerfile 仍放在 server/ 下，便于后续拆分项目
+    image: crpi-sopllrs9xzm8ebi5.cn-beijing.personal.cr.aliyuncs.com/luca_z/luca_z_z:server-latest
     build:
       context: .
       dockerfile: server/Dockerfile
@@ -63,8 +61,7 @@ services:
         condition: service_healthy
 
   client:
-    image: cyzeng/module-assistant-client:latest
-    # build context 是根目录，原因同 server
+    image: crpi-sopllrs9xzm8ebi5.cn-beijing.personal.cr.aliyuncs.com/luca_z/luca_z_z:client-latest
     build:
       context: .
       dockerfile: client/Dockerfile

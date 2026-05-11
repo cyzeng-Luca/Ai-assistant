@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { generateUUID } from '@lib/uuid';
 import { Layout, Grid, Drawer, Button, Typography } from 'antd';
 import { MenuOutlined } from '@ant-design/icons';
 import { useAppStore } from '@store';
@@ -58,7 +59,7 @@ export default function ChatPage() {
 
   const handleSend = async (content: string) => {
     if (!activeId) return;
-    addMessage({ id: crypto.randomUUID(), role: 'user', content });
+    addMessage({ id: generateUUID(), role: 'user', content });
     sendMessage(activeId, content);
     if (!activeConversation?.title) {
       await api.updateConversationTitle(activeId, content);

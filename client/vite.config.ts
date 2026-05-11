@@ -10,7 +10,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      selfDestroying: true,
+
       manifest: {
         name: '模块查询助手',
         short_name: '模块助手',

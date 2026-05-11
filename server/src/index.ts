@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { env } from '@lib/config.js';
@@ -7,6 +6,8 @@ import { reqLogger } from '@middleware/logger.js';
 import { registerRoutes } from '@routes/index.js';
 
 const app = express();
+
+app.set('trust proxy', 1);
 
 app.use(reqLogger);
 app.use(cors());

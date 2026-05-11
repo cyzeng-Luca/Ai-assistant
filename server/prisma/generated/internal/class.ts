@@ -19,7 +19,7 @@ const config: runtime.GetPrismaClientConfig = {
   engineVersion: '3c6e192761c0362d496ed980de936e2f3cebcd3a',
   activeProvider: 'postgresql',
   inlineSchema:
-    'datasource db {\n  provider = "postgresql"\n}\n\ngenerator client {\n  provider = "prisma-client"\n  output   = "./generated"\n}\n\nmodel User {\n  id            String         @id @default(uuid())\n  username      String         @unique\n  createdAt     DateTime       @default(now())\n  conversations Conversation[]\n}\n\nmodel Conversation {\n  id        String   @id @default(uuid())\n  userId    String\n  title     String?\n  user      User     @relation(fields: [userId], references: [id])\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n}\n',
+    'generator client {\n  provider = "prisma-client"\n  output   = "./generated"\n}\n\ndatasource db {\n  provider = "postgresql"\n}\n\nmodel User {\n  id            String         @id @default(uuid())\n  username      String         @unique\n  createdAt     DateTime       @default(now())\n  conversations Conversation[]\n}\n\nmodel Conversation {\n  id        String   @id @default(uuid())\n  userId    String\n  title     String?\n  user      User     @relation(fields: [userId], references: [id])\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n}\n',
   runtimeDataModel: {
     models: {},
     enums: {},

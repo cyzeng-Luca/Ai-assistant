@@ -14,17 +14,16 @@
     "rewriteRelativeImportExtensions": true,
     "resolveJsonModule": true,
     "sourceMap": true,
-    "baseUrl": "./src",
     "paths": {
-      "@agent/*": ["./agent/*"],
-      "@lib/*": ["./lib/*"],
-      "@middleware/*": ["./middleware/*"],
-      "@queue/*": ["./queue/*"],
-      "@rag/*": ["./rag/*"],
-      "@routes/*": ["./routes/*"],
-      "@services/*": ["./services/*"]
+      "@agent/*": ["./src/agent/*"],
+      "@lib/*": ["./src/lib/*"],
+      "@middleware/*": ["./src/middleware/*"],
+      "@queue/*": ["./src/queue/*"],
+      "@rag/*": ["./src/rag/*"],
+      "@routes/*": ["./src/routes/*"],
+      "@services/*": ["./src/services/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "prisma.config.ts"],
   "exclude": ["node_modules", "dist"]
 }

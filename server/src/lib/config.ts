@@ -1,3 +1,9 @@
+import dotenv from 'dotenv';
+
+// 在模块顶层最先加载 .env，确保后续 Zod 校验时 process.env 已有值
+dotenv.config({ path: '../.env' });
+dotenv.config({ path: '.env.local', override: true });
+
 import { z } from 'zod';
 
 const envSchema = z.object({
@@ -13,7 +19,6 @@ const envSchema = z.object({
   CHUNK_SIZE: z.coerce.number().int().positive().default(500),
   CHUNK_OVERLAP: z.coerce.number().int().nonnegative().default(50),
   DATABASE_URL: z.string().min(1),
-  CHROMA_URL: z.string().url().default('http://localhost:8000'),
   REDIS_URL: z.string().url().default('redis://localhost:6379'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 chars'),
   JWT_EXPIRES_IN: z.string().default('24h'),

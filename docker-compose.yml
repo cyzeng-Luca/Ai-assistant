@@ -1,15 +1,16 @@
-version: "3.8"
+name: module-assistant-prod
 
 services:
   postgres:
     image: postgres:16-alpine
     container_name: module-assistant-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-module_assistant}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -18,26 +19,12 @@ services:
       timeout: 5s
       retries: 5
 
-  chromadb:
-    image: chromadb/chroma:latest
-    container_name: module-assistant-chroma
-    ports:
-      - "8000:8000"
-    volumes:
-      - chroma-data:/chroma/chroma
-    environment:
-      - IS_PERSISTENT=TRUE
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v2/heartbeat"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   redis:
     image: redis:7-alpine
     container_name: module-assistant-redis
+    restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
     healthcheck:
@@ -47,13 +34,18 @@ services:
       retries: 5
 
   server:
-    build: ./server
+    image: cyzeng/module-assistant-server:latest
+    # build context 是根目录，因为 pnpm workspace 的 lockfile 在根目录
+    # Dockerfile 仍放在 server/ 下，便于后续拆分项目
+    build:
+      context: .
+      dockerfile: server/Dockerfile
     container_name: module-assistant-server
-    ports:
-      - "${SERVER_PORT:-3001}:3001"
+    restart: unless-stopped
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=${DATABASE_URL}
-      - CHROMA_URL=${CHROMA_URL:-http://chromadb:8000}
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
@@ -63,13 +55,26 @@ services:
       - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-https://api.deepseek.com/anthropic}
       - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-deepseek-v4-pro}
       - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
+      - NODE_ENV=production
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
 
+  client:
+    image: cyzeng/module-assistant-client:latest
+    # build context 是根目录，原因同 server
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    container_name: module-assistant-client
+    restart: unless-stopped
+    ports:
+      - "${CLIENT_PORT:-80}:80"
+    depends_on:
+      - server
+
 volumes:
   pgdata:
-  chroma-data:
   redis-data:

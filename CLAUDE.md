@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 SaaS 模块查询助手 — 前后端分离的全栈应用。
 
-- **Server**: Express + Prisma + LangGraph + ChromaDB + DeepSeek API
+- **Server**: Express + Prisma + LangGraph + Bailian RAG + DeepSeek API
 - **Client**: React + Vite + Nginx 静态部署
-- **Infra**: Docker Compose (postgres + chromadb)
+- **Infra**: Docker Compose (postgres + redis)
 
 ## Shell 权限
 
@@ -19,7 +19,7 @@ SaaS 模块查询助手 — 前后端分离的全栈应用。
 ### 项目配置
 
 - `.prettierrc` / `.prettierignore` / `.env.example` / `.gitignore`
-- `docker-compose.yml` (postgres + chromadb)
+- `docker-compose.yml` (postgres + redis)
 
 ### Server
 
@@ -35,7 +35,7 @@ SaaS 模块查询助手 — 前后端分离的全栈应用。
 - `server/src/routes/conversation.ts` (4 个 API + SSE，使用 req.userId)
 - `server/src/services/conversation.ts` (Prisma CRUD)
 - `server/src/services/llm.ts` — DeepSeek SSE 流式，`async function*` + `yield`
-- `server/src/agent/rag.ts` — ChromaDB 检索，简化版
+- `server/src/agent/tools/ragSearch.ts` — Bailian 知识库检索
 - `server/src/agent/graph.ts` — LangGraph workflow，Annotation + 三节点（decide → retrieve/generate → END）
 
 ### Client
@@ -74,5 +74,4 @@ SaaS 模块查询助手 — 前后端分离的全栈应用。
 
 ## 待办事项 (2026-05-06)
 
-- [ ] **向量数据库的添加** — 将 ChromaDB 检索能力产品化，支持知识库的增删改查和向量索引管理
 - [ ] **数据原子性问题** — 网络波动等异常场景下 LLM 请求的重试机制，保证消息不丢失、不重复

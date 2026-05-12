@@ -26,7 +26,7 @@ function Bubble({
   const isUser = role === 'user';
   return (
     <div
-      className={`px-4 py-3 message-enter flex ${isUser ? 'justify-end' : 'justify-start'} ${showTyping ? 'typing-cursor' : ''}`}
+      className={`px-4 py-3 message-enter flex ${isUser ? 'justify-end' : 'justify-start'}`}
       style={{
         width: '752px',
       }}
@@ -41,7 +41,9 @@ function Bubble({
           </Typography.Paragraph>
         </div>
       ) : (
-        <div className="markdown-content text-base leading-relaxed">
+        <div
+          className={`markdown-content text-base leading-relaxed${showTyping ? ' streaming' : ''}`}
+        >
           <ReactMarkdown>{content || ' '}</ReactMarkdown>
         </div>
       )}

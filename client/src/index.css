@@ -219,21 +219,16 @@ body,
    Typing Cursor (streaming indicator)
    ============================================ */
 
-.typing-cursor {
-  position: relative;
-}
-
-.typing-cursor::after {
+.markdown-content.streaming > *:last-child::after {
   content: '';
-  position: absolute;
-  bottom: 6px;
-  right: 8px;
+  display: inline-block;
   width: 5px;
   height: 5px;
   border-radius: 50%;
   background: var(--color-accent);
   animation: typing-blink 1s ease-in-out infinite;
-  box-shadow: none;
+  vertical-align: baseline;
+  margin-left: 2px;
 }
 
 /* ============================================

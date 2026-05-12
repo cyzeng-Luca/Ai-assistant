@@ -53,11 +53,16 @@ export default function ChatPage() {
   };
 
   const handleSend = async (content: string) => {
-    if (!activeId) return;
-    addMessage(activeId, { id: generateUUID(), role: 'user', content });
-    sendMessage(activeId, content);
+    let targetId = activeId;
+    if (!targetId) {
+      const conv = await api.createConversation();
+      targetId = conv.id;
+      setActiveId(conv.id);
+    }
+    addMessage(targetId, { id: generateUUID(), role: 'user', content });
+    sendMessage(targetId, content);
     if (!activeConversation?.title) {
-      await api.updateConversationTitle(activeId, content);
+      await api.updateConversationTitle(targetId, content);
       void fetchConversations();
     }
   };
@@ -90,7 +95,6 @@ export default function ChatPage() {
           }}
           onStop={() => { stopStreaming(activeId ?? undefined); }}
           isStreaming={isStreaming}
-          disabled={!activeId}
         /> */}
       </div>
     </Content>
@@ -164,7 +168,6 @@ export default function ChatPage() {
             stopStreaming(activeId ?? undefined);
           }}
           isStreaming={isStreaming}
-          disabled={!activeId}
         />
       </Content>
     </Layout>

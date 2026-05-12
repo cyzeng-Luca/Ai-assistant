@@ -6,7 +6,7 @@ interface ChatInputProps {
   onSend: (content: string) => void;
   onStop: () => void;
   isStreaming: boolean;
-  disabled: boolean;
+  disabled?: boolean;
 }
 
 export default function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputProps) {

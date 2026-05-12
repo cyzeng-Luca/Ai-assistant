@@ -3,6 +3,7 @@ import { useThrottleFn } from 'ahooks';
 import { Typography, Alert, Spin } from 'antd';
 import { RobotOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
+import { useAppStore } from '@store';
 import type { Message } from '@/types';
 
 interface MessageListProps {
@@ -24,11 +25,12 @@ function Bubble({
   showTyping?: boolean;
 }) {
   const isUser = role === 'user';
+  const isMobile = useAppStore((s) => s.isMobile);
   return (
     <div
       className={`px-4 py-3 message-enter flex ${isUser ? 'justify-end' : 'justify-start'}`}
       style={{
-        width: '752px',
+        width: isMobile ? '100vw' : '752px',
       }}
     >
       {isUser ? (

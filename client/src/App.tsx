@@ -1,7 +1,18 @@
-import { ConfigProvider, theme } from 'antd';
+import { useEffect } from 'react';
+import { ConfigProvider, Grid, theme } from 'antd';
 import AppRouter from '@router';
+import { useAppStore } from '@store';
+
+const { useBreakpoint } = Grid;
 
 export default function App() {
+  const screens = useBreakpoint();
+  const setIsMobile = useAppStore((s) => s.setIsMobile);
+
+  useEffect(() => {
+    setIsMobile(!screens.md);
+  }, [screens.md, setIsMobile]);
+
   return (
     <ConfigProvider
       theme={{

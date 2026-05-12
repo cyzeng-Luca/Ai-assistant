@@ -8,6 +8,9 @@ interface AppStore {
   setUser: (user: User | null) => void;
   logout: () => void;
 
+  isMobile: boolean;
+  setIsMobile: (v: boolean) => void;
+
   conversations: Conversation[];
   fetchConversations: () => Promise<void>;
 
@@ -23,6 +26,9 @@ export const useAppStore = create<AppStore>()(
       user: null,
       setUser: (user) => set({ user }),
       logout: () => set({ user: null, conversations: [], messagesMap: {}, messagesLoading: {} }),
+
+      isMobile: false,
+      setIsMobile: (v) => set({ isMobile: v }),
 
       conversations: [],
       fetchConversations: async () => {

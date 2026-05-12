@@ -1,6 +1,7 @@
 import { Input, Button } from 'antd';
 import { SendOutlined, StopOutlined } from '@ant-design/icons';
 import { useState } from 'react';
+import { useAppStore } from '@store';
 
 interface ChatInputProps {
   onSend: (content: string) => void;
@@ -11,6 +12,7 @@ interface ChatInputProps {
 
 export default function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputProps) {
   const [value, setValue] = useState('');
+  const isMobile = useAppStore((s) => s.isMobile);
 
   const handleSend = () => {
     const trimmed = value.trim();
@@ -32,6 +34,7 @@ export default function ChatInput({ onSend, onStop, isStreaming, disabled }: Cha
       style={{
         display: 'flex',
         justifyContent: 'center',
+        width: isMobile ? '100dvw' : '100%',
       }}
     >
       <div

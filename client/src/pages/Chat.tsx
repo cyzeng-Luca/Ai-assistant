@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { generateUUID } from '@lib/uuid';
-import { Layout, Grid, Drawer, Button, Typography } from 'antd';
+import { Layout, Drawer, Button, Typography, Spin } from 'antd';
 import { MenuOutlined } from '@ant-design/icons';
 import { useAppStore } from '@store';
 import Sidebar from '@components/Sidebar';
@@ -10,11 +10,8 @@ import { useSSE } from '@hooks/useSSE';
 import * as api from '@services/api';
 
 const { Sider, Content, Header } = Layout;
-const { useBreakpoint } = Grid;
-
 export default function ChatPage() {
-  const screens = useBreakpoint();
-  const isMobile = !screens.md;
+  const isMobile = useAppStore((s) => s.isMobile);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const logout = useAppStore((s) => s.logout);
@@ -41,8 +38,8 @@ export default function ChatPage() {
 
   const handleSelect = (id: string, skipLoad?: boolean) => {
     if (id === activeId) return;
-    setActiveId(id);
     if (!skipLoad) void loadMessages(id);
+    setActiveId(id);
     if (isMobile) setDrawerOpen(false);
   };
 
@@ -69,44 +66,41 @@ export default function ChatPage() {
 
   const sidebarEl = <Sidebar activeId={activeId} onSelect={handleSelect} onLogout={handleLogout} />;
 
-  const chatContent = (
-    <Content className="flex flex-col min-h-0 !bg-surface-base items-center">
-      <MessageList
-        streamingContent={tokens}
-        streamingError={error}
-        messages={messages}
-        loading={loading}
-        streamingId={streamingId}
-        isStreaming={isStreaming}
-      />
-      <div className="flex-1 flex flex-col w-full max-w-[752px]">
-        {/* <MessageList
-          streamingContent={tokens}
-          streamingError={error}
-          messages={messages}
-          loading={loading}
-          streamingId={streamingId}
-          isStreaming={isStreaming}
-        /> */}
-        {/* <ChatInput
-          key={activeId}
-          onSend={(content) => {
-            void handleSend(content);
-          }}
-          onStop={() => { stopStreaming(activeId ?? undefined); }}
-          isStreaming={isStreaming}
-        /> */}
-      </div>
-    </Content>
+  const loadingEl = (
+    <div className="flex justify-center items-center" style={{ height: '100%' }}>
+      <Spin tip="加载中...">
+        <div className="p-12" />
+      </Spin>
+    </div>
+  );
+
+  const chatContent = loading ? (
+    loadingEl
+  ) : (
+    <MessageList
+      streamingContent={tokens}
+      streamingError={error}
+      messages={messages}
+      loading={false}
+      streamingId={streamingId}
+      isStreaming={isStreaming}
+    />
   );
 
   if (isMobile) {
     return (
-      <Layout className="!min-h-0 !h-full">
-        <Header
-          className="!h-12 shrink-0 flex items-center border-b !border-border-subtle !px-4"
-          style={{ background: 'rgb(249, 250, 251)' }}
-        >
+      <Layout
+        style={{
+          display: 'grid',
+          height: '100dvh',
+          overflow: 'hidden',
+          gridTemplateRows: 'auto 1fr auto',
+          background: 'white',
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        <Header className="!px-4" style={{ background: 'white' }}>
           <Button
             type="text"
             icon={<MenuOutlined />}
@@ -114,7 +108,7 @@ export default function ChatPage() {
               setDrawerOpen(true);
             }}
           />
-          <Typography.Text strong className="ml-3 truncate">
+          <Typography.Text strong className="ml-3 ">
             {activeConversation?.title ?? '模块查询助手'}
           </Typography.Text>
         </Header>
@@ -125,11 +119,22 @@ export default function ChatPage() {
           }}
           placement="left"
           width={280}
-          styles={{ body: { padding: 0, background: 'rgb(249, 250, 251)' } }}
+          styles={{ body: { padding: 0, background: 'white' } }}
+          closeIcon={false}
         >
           {sidebarEl}
         </Drawer>
-        <Layout className="flex-1! min-h-0! overflow-hidden !bg-white">{chatContent}</Layout>
+        {chatContent}
+        <ChatInput
+          key={activeId}
+          onSend={(content) => {
+            void handleSend(content);
+          }}
+          onStop={() => {
+            stopStreaming(activeId ?? undefined);
+          }}
+          isStreaming={isStreaming}
+        />
       </Layout>
     );
   }
@@ -137,7 +142,7 @@ export default function ChatPage() {
   return (
     <Layout
       style={{
-        height: '100vh',
+        height: '100dvh',
       }}
     >
       <Sider width={280} style={{ background: 'rgb(249, 250, 251)' }}>
@@ -146,19 +151,12 @@ export default function ChatPage() {
       <Content
         style={{
           background: 'white',
-          height: '100vh',
           display: 'grid',
+          overflow: 'hidden',
           gridTemplateRows: '1fr auto',
         }}
       >
-        <MessageList
-          streamingContent={tokens}
-          streamingError={error}
-          messages={messages}
-          loading={loading}
-          streamingId={streamingId}
-          isStreaming={isStreaming}
-        />
+        {chatContent}
         <ChatInput
           key={activeId}
           onSend={(content) => {

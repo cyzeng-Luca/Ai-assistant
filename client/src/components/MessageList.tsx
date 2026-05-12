@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Avatar, Typography, Alert, Spin } from 'antd';
-import { UserOutlined, RobotOutlined } from '@ant-design/icons';
+import { useThrottleFn } from 'ahooks';
+import { Typography, Alert, Spin } from 'antd';
+import { RobotOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import type { Message } from '@/types';
 
@@ -24,27 +25,26 @@ function Bubble({
 }) {
   const isUser = role === 'user';
   return (
-    <div className={`flex flex-row px-4 py-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
-      <div
-        className={`flex gap-2.5 max-w-[75%] items-start ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
-      >
-        <Avatar
-          icon={isUser ? <UserOutlined /> : <RobotOutlined />}
-          className={`shrink-0 ${isUser ? 'bg-ant-blue' : 'bg-ant-green'}`}
-          size={36}
-        />
+    <div
+      className={`px-4 py-3 message-enter flex ${isUser ? 'justify-end' : 'justify-start'} ${showTyping ? 'typing-cursor' : ''}`}
+      style={{
+        width: '752px',
+      }}
+    >
+      {isUser ? (
         <div
-          className={`px-3.5 py-2.5 rounded-lg break-words ${isUser ? 'bg-ant-blue text-white' : 'bg-ant-gray-100 text-black'} ${showTyping ? 'typing-cursor' : ''}`}
+          className="p-4 rounded-2xl "
+          style={{ background: 'rgb(237, 243, 254)', color: '#000' }}
         >
-          {isUser ? (
-            <Typography.Paragraph className="!m-0 whitespace-pre-wrap !text-inherit">
-              {content || ' '}
-            </Typography.Paragraph>
-          ) : (
-            <ReactMarkdown>{content || ' '}</ReactMarkdown>
-          )}
+          <Typography.Paragraph className="!m-0 " style={{ fontSize: 16 }}>
+            {content || ' '}
+          </Typography.Paragraph>
         </div>
-      </div>
+      ) : (
+        <div className="markdown-content text-base leading-relaxed">
+          <ReactMarkdown>{content || ' '}</ReactMarkdown>
+        </div>
+      )}
     </div>
   );
 }
@@ -61,16 +61,24 @@ export default function MessageList({
   const containerRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
 
-  const handleWheel = (e: React.WheelEvent) => {
-    if (e.deltaY < 0) isAtBottomRef.current = false;
-  };
+  const { run: handleWheel } = useThrottleFn(
+    (e: React.WheelEvent) => {
+      if (e.deltaY < 0) {
+        isAtBottomRef.current = false;
+      }
+    },
+    { wait: 20 },
+  );
 
-  const handleScroll = () => {
-    const el = containerRef.current;
-    if (!el) return;
-    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
-    isAtBottomRef.current = atBottom;
-  };
+  const { run: handleScroll } = useThrottleFn(
+    () => {
+      const el = containerRef.current;
+      if (!el) return;
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+      isAtBottomRef.current = atBottom;
+    },
+    { wait: 20 },
+  );
 
   useEffect(() => {
     isAtBottomRef.current = true;
@@ -108,18 +116,39 @@ export default function MessageList({
       ref={containerRef}
       onScroll={handleScroll}
       onWheel={handleWheel}
-      className="flex-1 overflow-y-auto"
+      style={{
+        // height: '100vh',
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}
     >
       {streamingError && (
-        <Alert message={streamingError} type="error" closable showIcon className="m-3" />
+        <Alert
+          message={streamingError}
+          type="error"
+          closable
+          showIcon
+          className="m-3 animate-fade-in"
+        />
       )}
-
       {loading && messages.length === 0 && (
         <div className="flex justify-center items-center h-full">
-          <Spin tip="加载中..." />
+          <Spin tip="加载中...">
+            <div className="p-12" />
+          </Spin>
         </div>
       )}
-
+      {!loading && messages.length === 0 && (
+        <div className="flex flex-col items-center justify-center h-full text-text-tertiary">
+          <RobotOutlined className="text-4xl mb-4 opacity-30" />
+          <Typography.Text className="!text-text-tertiary">模块查询助手</Typography.Text>
+          <Typography.Text className="!text-text-tertiary mt-1">
+            请输入您的问题开始对话
+          </Typography.Text>
+        </div>
+      )}
       {displayMessages.map((msg) => (
         <Bubble
           key={msg.id}
@@ -128,7 +157,6 @@ export default function MessageList({
           showTyping={msg.id === streamingId && isStreaming}
         />
       ))}
-
       <div />
     </div>
   );

@@ -14,8 +14,8 @@ export default defineConfig({
       manifest: {
         name: '模块查询助手',
         short_name: '模块助手',
-        theme_color: '#1677ff',
-        background_color: '#ffffff',
+        theme_color: '#fef9f4',
+        background_color: '#fef9f4',
         display: 'standalone',
         start_url: '/',
         scope: '/',
@@ -39,6 +39,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',
     port: 5173,
     proxy: {
       '/api': {

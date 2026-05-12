@@ -67,8 +67,10 @@ export default function ChatPage() {
     }
   };
 
+  const sidebarEl = <Sidebar activeId={activeId} onSelect={handleSelect} onLogout={handleLogout} />;
+
   const chatContent = (
-    <Content className="flex flex-col bg-white">
+    <Content className="flex flex-col min-h-0 !bg-surface-base items-center">
       <MessageList
         streamingContent={tokens}
         streamingError={error}
@@ -77,22 +79,35 @@ export default function ChatPage() {
         streamingId={streamingId}
         isStreaming={isStreaming}
       />
-      <ChatInput
-        key={activeId}
-        onSend={(content) => {
-          void handleSend(content);
-        }}
-        onStop={stopStreaming}
-        isStreaming={isStreaming}
-        disabled={!activeId}
-      />
+      <div className="flex-1 flex flex-col w-full max-w-[752px]">
+        {/* <MessageList
+          streamingContent={tokens}
+          streamingError={error}
+          messages={messages}
+          loading={messagesLoading}
+          streamingId={streamingId}
+          isStreaming={isStreaming}
+        /> */}
+        {/* <ChatInput
+          key={activeId}
+          onSend={(content) => {
+            void handleSend(content);
+          }}
+          onStop={stopStreaming}
+          isStreaming={isStreaming}
+          disabled={!activeId}
+        /> */}
+      </div>
     </Content>
   );
 
   if (isMobile) {
     return (
-      <Layout className="h-screen">
-        <Header className="!bg-white flex items-center border-b border-ant-gray-100 px-4">
+      <Layout className="!min-h-0 !h-full">
+        <Header
+          className="!h-12 shrink-0 flex items-center border-b !border-border-subtle !px-4"
+          style={{ background: 'rgb(249, 250, 251)' }}
+        >
           <Button
             type="text"
             icon={<MenuOutlined />}
@@ -111,24 +126,50 @@ export default function ChatPage() {
           }}
           placement="left"
           width={280}
-          styles={{ body: { padding: 0 } }}
+          styles={{ body: { padding: 0, background: 'rgb(249, 250, 251)' } }}
         >
-          <Sidebar activeId={activeId} onSelect={handleSelect} onLogout={handleLogout} />
+          {sidebarEl}
         </Drawer>
-        <Layout>{chatContent}</Layout>
+        <Layout className="flex-1! min-h-0! overflow-hidden !bg-white">{chatContent}</Layout>
       </Layout>
     );
   }
 
   return (
-    <Layout className="h-screen">
-      <Sider
-        width={280}
-        className="!bg-white overflow-hidden flex flex-col border-r border-ant-gray-100"
-      >
-        <Sidebar activeId={activeId} onSelect={handleSelect} onLogout={handleLogout} />
+    <Layout
+      style={{
+        height: '100vh',
+      }}
+    >
+      <Sider width={280} style={{ background: 'rgb(249, 250, 251)' }}>
+        {sidebarEl}
       </Sider>
-      <Layout>{chatContent}</Layout>
+      <Content
+        style={{
+          background: 'white',
+          height: '100vh',
+          display: 'grid',
+          gridTemplateRows: '1fr auto',
+        }}
+      >
+        <MessageList
+          streamingContent={tokens}
+          streamingError={error}
+          messages={messages}
+          loading={messagesLoading}
+          streamingId={streamingId}
+          isStreaming={isStreaming}
+        />
+        <ChatInput
+          key={activeId}
+          onSend={(content) => {
+            void handleSend(content);
+          }}
+          onStop={stopStreaming}
+          isStreaming={isStreaming}
+          disabled={!activeId}
+        />
+      </Content>
     </Layout>
   );
 }

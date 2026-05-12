@@ -1,10 +1,166 @@
 @import 'tailwindcss';
 
+/* ============================================
+   Design System — Clean Blue
+   ============================================ */
+
 @theme {
-  --color-ant-gray-50: #f5f5f5;
-  --color-ant-gray-100: #f0f0f0;
-  --color-ant-blue: #1677ff;
-  --color-ant-green: #52c41a;
+  /* Surface */
+  --color-surface-base: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-glass: rgba(255, 255, 255, 0.7);
+
+  /* Border */
+  --color-border-subtle: rgba(0, 0, 0, 0.06);
+  --color-border-default: rgba(0, 0, 0, 0.1);
+  --color-border-strong: rgba(0, 0, 0, 0.18);
+
+  /* Text */
+  --color-text-primary: #000000;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
+
+  /* Accent — Blue */
+  --color-accent: #4a6ee8;
+  --color-accent-soft: rgba(74, 110, 232, 0.1);
+  --color-accent-glow: rgba(74, 110, 232, 0.2);
+  --color-accent-gradient-start: #4a6ee8;
+  --color-accent-gradient-end: #6b8af0;
+
+  /* Status */
+  --color-success: #52c41a;
+  --color-error: #ff4d4f;
+  --color-warning: #faad14;
+}
+
+/* ============================================
+   Base
+   ============================================ */
+
+html {
+  height: 100dvh;
+}
+
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--color-surface-base);
+  color: var(--color-text-primary);
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   Scrollbar
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   Glass Surface Utility
+   ============================================ */
+
+.glass {
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.glass-raised {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--color-border-default);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* ============================================
+   Typography Utility
+   ============================================ */
+
+.text-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-gradient-start),
+    var(--color-accent-gradient-end)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes typing-blink {
@@ -13,9 +169,55 @@
     opacity: 1;
   }
   50% {
-    opacity: 0;
+    opacity: 0.3;
   }
 }
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Stagger children */
+.stagger > * {
+  animation: fade-in-up 0.5s ease-out both;
+}
+
+.stagger > *:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.stagger > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.stagger > *:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.stagger > *:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.stagger > *:nth-child(5) {
+  animation-delay: 0.25s;
+}
+.stagger > *:nth-child(6) {
+  animation-delay: 0.3s;
+}
+.stagger > *:nth-child(7) {
+  animation-delay: 0.35s;
+}
+.stagger > *:nth-child(8) {
+  animation-delay: 0.4s;
+}
+
+/* ============================================
+   Typing Cursor (streaming indicator)
+   ============================================ */
 
 .typing-cursor {
   position: relative;
@@ -26,9 +228,240 @@
   position: absolute;
   bottom: 6px;
   right: 8px;
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: #1677ff;
+  background: var(--color-accent);
   animation: typing-blink 1s ease-in-out infinite;
+  box-shadow: none;
+}
+
+/* ============================================
+   Markdown Content Styling
+   ============================================ */
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+  color: var(--color-text-primary);
+  margin: 1em 0 0.5em;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.markdown-content h1 {
+  font-size: 1.25em;
+}
+.markdown-content h2 {
+  font-size: 1.1em;
+}
+.markdown-content h3 {
+  font-size: 1em;
+}
+
+.markdown-content p {
+  margin: 0.5em 0;
+  line-height: 1.7;
+}
+
+.markdown-content p:first-child {
+  margin-top: 0;
+}
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.markdown-content li {
+  margin: 0.25em 0;
+  line-height: 1.6;
+}
+
+.markdown-content code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  color: #d91a5c;
+}
+
+.markdown-content pre {
+  background: #f6f8fa;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  padding: 1em;
+  overflow-x: auto;
+  margin: 0.75em 0;
+}
+
+.markdown-content pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.85em;
+  color: var(--color-text-primary);
+}
+
+.markdown-content blockquote {
+  border-left: 3px solid var(--color-accent);
+  padding-left: 1em;
+  margin: 0.75em 0;
+  color: var(--color-text-secondary);
+  background: rgba(74, 110, 232, 0.04);
+  padding: 0.5em 1em;
+  border-radius: 0 6px 6px 0;
+}
+
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75em 0;
+  font-size: 0.9em;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid var(--color-border-subtle);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+
+.markdown-content th {
+  background: rgba(74, 110, 232, 0.06);
+  font-weight: 600;
+}
+
+.markdown-content a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.markdown-content a:hover {
+  text-decoration: underline;
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--color-border-default);
+  margin: 1em 0;
+}
+
+/* ============================================
+   Ant Design Light Overrides
+   ============================================ */
+
+/* Menu */
+.ant-menu {
+  background: transparent !important;
+  border-inline-end: none !important;
+}
+
+.ant-menu-item {
+  border-radius: 8px !important;
+  margin: 2px 8px !important;
+  width: auto !important;
+  transition: all 0.2s ease !important;
+}
+
+.ant-menu-item:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+.ant-menu-item-selected {
+  background: var(--color-accent-soft) !important;
+  color: var(--color-accent) !important;
+  font-weight: 500 !important;
+}
+
+/* Button */
+.ant-btn-primary {
+  box-shadow: none !important;
+  border: none !important;
+  background: var(--color-accent) !important;
+}
+
+.ant-btn-primary:hover {
+  background: #5b7ef0 !important;
+}
+
+/* Input / TextArea */
+.ant-input,
+.ant-input-affix-wrapper {
+  transition: all 0.2s ease !important;
+}
+
+.ant-input:focus,
+.ant-input-focused,
+.ant-input-affix-wrapper-focused {
+  box-shadow: 0 0 0 2px var(--color-accent-soft) !important;
+  border-color: var(--color-accent) !important;
+}
+
+/* Card */
+.ant-card {
+  transition: all 0.3s ease !important;
+}
+
+/* Spin */
+.ant-spin-dot-item {
+  background: var(--color-accent) !important;
+}
+
+/* Drawer */
+.ant-drawer-content {
+  background: rgb(249, 250, 251) !important;
+}
+
+/* Alert */
+.ant-alert-error {
+  background: rgba(255, 77, 79, 0.06) !important;
+  border-color: rgba(255, 77, 79, 0.2) !important;
+}
+
+/* Message (toast) */
+.ant-message .ant-message-notice-content {
+  background: var(--color-surface-raised) !important;
+  border: 1px solid var(--color-border-default) !important;
+  color: var(--color-text-primary) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* ============================================
+   Message Bubble Entrance
+   ============================================ */
+
+.message-enter {
+  animation: fade-in-up 0.35s ease-out both;
+}
+
+/* ============================================
+   Selection
+   ============================================ */
+
+::selection {
+  background: rgba(74, 110, 232, 0.2);
+  color: var(--color-text-primary);
+}
+
+/* Chat textarea — no focus ring */
+.chat-textarea.ant-input:focus,
+.chat-textarea.ant-input-focused {
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+/* Send button disabled — light gray */
+.chat-send-btn.ant-btn-primary:disabled,
+.chat-send-btn.ant-btn-primary.ant-btn-disabled {
+  background: #d9d9d9 !important;
+  color: rgba(0, 0, 0, 0.25) !important;
+  border-color: #d9d9d9 !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
 }

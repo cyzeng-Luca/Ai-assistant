@@ -35,8 +35,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="h-screen flex justify-center items-center bg-ant-gray-50">
-      <Card className="w-[400px]" title="SaaS 模块查询助手">
+    <div className="h-dvh flex justify-center items-center relative overflow-hidden">
+      <Card
+        className="w-[90vw] max-w-[420px] glass-raised animate-scale-in !border-border-default"
+        styles={{ body: { padding: '28px 24px' } }}
+        title={
+          <span className="text-gradient text-lg font-semibold tracking-tight">
+            SaaS 模块查询助手
+          </span>
+        }
+      >
         <Space direction="vertical" className="w-full" size="middle">
           {error && (
             <Alert
@@ -49,7 +57,9 @@ export default function LoginPage() {
               }}
             />
           )}
-          <Typography.Text type="secondary">输入您的用户名以开始使用</Typography.Text>
+          <Typography.Text className="!text-text-secondary text-sm">
+            输入您的用户名以开始使用
+          </Typography.Text>
           <Input
             placeholder="输入用户名"
             prefix={<UserOutlined />}
@@ -60,7 +70,14 @@ export default function LoginPage() {
             onPressEnter={handleLogin}
             autoFocus
           />
-          <Button type="primary" block onClick={handleLogin} loading={loading}>
+          <Button
+            type="primary"
+            block
+            onClick={handleLogin}
+            loading={loading}
+            size="large"
+            className="!h-11 !rounded-lg !font-semibold"
+          >
             登录
           </Button>
         </Space>

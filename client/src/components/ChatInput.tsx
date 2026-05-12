@@ -1,4 +1,4 @@
-import { Input, Button, Space } from 'antd';
+import { Input, Button } from 'antd';
 import { SendOutlined, StopOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 
@@ -27,8 +27,17 @@ export default function ChatInput({ onSend, onStop, isStreaming, disabled }: Cha
   };
 
   return (
-    <div className="px-6 py-4 border-t border-ant-gray-100">
-      <Space.Compact className="w-full">
+    <div
+      className="p-4"
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+      }}
+    >
+      <div
+        className="rounded-2xl border border-border-default"
+        style={{ background: '#ffffff', width: '752px' }}
+      >
         <Input.TextArea
           value={value}
           onChange={(e) => {
@@ -36,20 +45,38 @@ export default function ChatInput({ onSend, onStop, isStreaming, disabled }: Cha
           }}
           onKeyDown={handleKeyDown}
           placeholder="输入您的问题..."
-          autoSize={{ minRows: 1, maxRows: 4 }}
+          autoSize={{ minRows: 2, maxRows: 6 }}
           disabled={disabled}
+          className="text-base chat-textarea"
+          style={{
+            border: 'none',
+            boxShadow: 'none',
+            padding: '12px 16px 8px',
+            background: 'transparent',
+            fontSize: 16,
+          }}
         />
-        {isStreaming ? (
-          <Button icon={<StopOutlined />} onClick={onStop} danger />
-        ) : (
-          <Button
-            type="primary"
-            icon={<SendOutlined />}
-            onClick={handleSend}
-            disabled={!value.trim() || disabled}
-          />
-        )}
-      </Space.Compact>
+        <div className="flex justify-end px-3 pb-3">
+          {isStreaming ? (
+            <Button
+              icon={<StopOutlined />}
+              onClick={onStop}
+              danger
+              style={{ height: 32, width: 32, borderRadius: 16 }}
+              className="flex items-center justify-center"
+            />
+          ) : (
+            <Button
+              type="primary"
+              icon={<SendOutlined />}
+              onClick={handleSend}
+              disabled={!value.trim() || disabled}
+              className="chat-send-btn flex items-center justify-center"
+              style={{ height: 32, width: 32, borderRadius: 16 }}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -23,7 +23,7 @@ export const useAppStore = create<AppStore>()(
     (set) => ({
       user: null,
       setUser: (user) => set({ user }),
-      logout: () => set({ user: null, conversations: [] }),
+      logout: () => set({ user: null, conversations: [], messages: [] }),
 
       conversations: [],
       fetchConversations: async () => {

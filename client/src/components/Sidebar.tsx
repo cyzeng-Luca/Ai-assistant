@@ -37,19 +37,27 @@ export default function Sidebar({ activeId, onSelect, onLogout }: SidebarProps) 
 
   return (
     <>
-      <div className="px-4 py-2 flex justify-between items-center border-b border-ant-gray-100">
-        <Typography.Text strong>{user?.username}</Typography.Text>
-        <Button size="small" onClick={onLogout}>
+      <div className="px-4 py-3 flex justify-between items-center border-b !border-border-subtle">
+        <Typography.Text strong className="!text-text-primary">
+          {user?.username}
+        </Typography.Text>
+        <Button
+          size="small"
+          type="text"
+          onClick={onLogout}
+          className="!text-text-tertiary hover:!text-text-primary"
+        >
           退出
         </Button>
       </div>
-      <div className="p-4">
+      <div className="p-3">
         <Button
           type="primary"
           icon={<PlusOutlined />}
           block
           onClick={createConversation}
           loading={loading}
+          className="!rounded-lg !font-medium"
         >
           新建对话
         </Button>
@@ -66,7 +74,7 @@ export default function Sidebar({ activeId, onSelect, onLogout }: SidebarProps) 
             className="border-r-0"
           />
         ) : (
-          <Typography.Text type="secondary" className="block text-center p-6">
+          <Typography.Text className="block text-center p-6 !text-text-tertiary">
             暂无对话
           </Typography.Text>
         )}

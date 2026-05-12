@@ -2,36 +2,51 @@ import { useRef, useState, useCallback } from 'react';
 import { generateUUID } from '@lib/uuid';
 import { streamMessage } from '@services/api';
 
+interface StreamState {
+  tokens: string;
+  streamingId: string;
+  isStreaming: boolean;
+  error: string | null;
+}
+
+const EMPTY_STREAM: StreamState = {
+  tokens: '',
+  streamingId: '',
+  isStreaming: false,
+  error: null,
+};
+
 interface UseSSEReturn {
   tokens: string;
   streamingId: string;
   isStreaming: boolean;
   error: string | null;
   sendMessage: (conversationId: string, content: string) => void;
-  stopStreaming: () => void;
-  reset: () => void;
+  stopStreaming: (conversationId?: string) => void;
 }
 
 export function useSSE(
-  onStreamComplete?: (streamingId: string, fullAnswer: string) => void,
+  activeId: string | null,
+  onStreamComplete?: (conversationId: string, streamingId: string, fullAnswer: string) => void,
 ): UseSSEReturn {
-  const [tokens, setTokens] = useState('');
-  const [streamingId, setStreamingId] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const controllerRef = useRef<AbortController | null>(null);
+  const [streams, setStreams] = useState<Record<string, StreamState>>({});
+  const controllersRef = useRef<Map<string, AbortController>>(new Map());
+
+  const active = activeId ? (streams[activeId] ?? EMPTY_STREAM) : EMPTY_STREAM;
 
   const sendMessage = useCallback(
     (conversationId: string, content: string) => {
-      controllerRef.current?.abort();
+      // 只 abort 同一对话的旧流，不影响其他对话
+      controllersRef.current.get(conversationId)?.abort();
+
       const id = generateUUID();
-      setStreamingId(id);
-      setTokens('');
-      setError(null);
-      setIsStreaming(true);
+      setStreams((prev) => ({
+        ...prev,
+        [conversationId]: { tokens: '', streamingId: id, isStreaming: true, error: null },
+      }));
 
       const controller = new AbortController();
-      controllerRef.current = controller;
+      controllersRef.current.set(conversationId, controller);
       let full = '';
 
       void (async () => {
@@ -40,39 +55,60 @@ export function useSSE(
             switch (event.type) {
               case 'token':
                 full += event.content;
-                setTokens(full);
+                setStreams((prev) => ({
+                  ...prev,
+                  [conversationId]: { ...prev[conversationId], tokens: full },
+                }));
                 break;
               case 'done':
-                onStreamComplete?.(id, full);
-                setIsStreaming(false);
-                setTokens('');
+                onStreamComplete?.(conversationId, id, full);
+                setStreams((prev) => ({
+                  ...prev,
+                  [conversationId]: {
+                    tokens: '',
+                    streamingId: '',
+                    isStreaming: false,
+                    error: null,
+                  },
+                }));
+                controllersRef.current.delete(conversationId);
                 break;
             }
           }
         } catch (err: unknown) {
           if (err instanceof DOMException && err.name === 'AbortError') return;
-          setError(err instanceof Error ? err.message : '未知错误');
-        } finally {
-          setIsStreaming(false);
-          setTokens('');
+          setStreams((prev) => ({
+            ...prev,
+            [conversationId]: {
+              ...prev[conversationId],
+              isStreaming: false,
+              error: err instanceof Error ? err.message : '未知错误',
+            },
+          }));
         }
       })();
     },
     [onStreamComplete],
   );
 
-  const stopStreaming = useCallback(() => {
-    controllerRef.current?.abort();
-    setIsStreaming(false);
+  const stopStreaming = useCallback((conversationId?: string) => {
+    const targetId = conversationId;
+    if (targetId) {
+      controllersRef.current.get(targetId)?.abort();
+      controllersRef.current.delete(targetId);
+      setStreams((prev) => ({
+        ...prev,
+        [targetId]: { ...prev[targetId], isStreaming: false, error: null },
+      }));
+    }
   }, []);
 
-  const reset = useCallback(() => {
-    controllerRef.current?.abort();
-    setTokens('');
-    setStreamingId('');
-    setIsStreaming(false);
-    setError(null);
-  }, []);
-
-  return { tokens, streamingId, isStreaming, error, sendMessage, stopStreaming, reset };
+  return {
+    tokens: active.tokens,
+    streamingId: active.streamingId,
+    isStreaming: active.isStreaming,
+    error: active.error,
+    sendMessage,
+    stopStreaming,
+  };
 }

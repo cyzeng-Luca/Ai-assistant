@@ -56,8 +56,8 @@ beforeEach(() => {
 });
 
 describe('useSSE', () => {
-  it('returns initial state', () => {
-    const { result } = renderHook(() => useSSE());
+  it('returns initial state for active conversation', () => {
+    const { result } = renderHook(() => useSSE('1'));
     expect(result.current.tokens).toBe('');
     expect(result.current.isStreaming).toBe(false);
     expect(result.current.error).toBeNull();
@@ -67,7 +67,7 @@ describe('useSSE', () => {
     const mock = createStreamMock();
     mockStreamMessage.mockReturnValue(mock);
 
-    const { result } = renderHook(() => useSSE());
+    const { result } = renderHook(() => useSSE('1'));
 
     act(() => {
       result.current.sendMessage('1', 'hi');
@@ -97,7 +97,7 @@ describe('useSSE', () => {
     mockStreamMessage.mockReturnValue(mock);
     const onComplete = vi.fn();
 
-    const { result } = renderHook(() => useSSE(onComplete));
+    const { result } = renderHook(() => useSSE('1', onComplete));
 
     act(() => {
       result.current.sendMessage('1', 'hi');
@@ -120,15 +120,15 @@ describe('useSSE', () => {
     await waitFor(() => {
       expect(result.current.isStreaming).toBe(false);
       expect(result.current.tokens).toBe('');
-      expect(onComplete).toHaveBeenCalledWith(expect.any(String), '答');
+      expect(onComplete).toHaveBeenCalledWith('1', expect.any(String), '答');
     });
   });
 
-  it('stopStreaming sets isStreaming false', () => {
+  it('stopStreaming sets isStreaming false for given conversation', () => {
     const mock = createStreamMock();
     mockStreamMessage.mockReturnValue(mock);
 
-    const { result } = renderHook(() => useSSE());
+    const { result } = renderHook(() => useSSE('1'));
 
     act(() => {
       result.current.sendMessage('1', 'hi');
@@ -136,17 +136,21 @@ describe('useSSE', () => {
     expect(result.current.isStreaming).toBe(true);
 
     act(() => {
-      result.current.stopStreaming();
+      result.current.stopStreaming('1');
     });
     expect(result.current.isStreaming).toBe(false);
   });
 
-  it('reset clears all state', async () => {
-    const mock = createStreamMock();
-    mockStreamMessage.mockReturnValue(mock);
+  it('does not interrupt other conversation streams', async () => {
+    const mock1 = createStreamMock();
+    const mock2 = createStreamMock();
+    mockStreamMessage.mockReturnValueOnce(mock1).mockReturnValueOnce(mock2);
 
-    const { result } = renderHook(() => useSSE());
+    const { result, rerender } = renderHook(({ activeId }) => useSSE(activeId), {
+      initialProps: { activeId: '1' as string | null },
+    });
 
+    // Start stream for conversation 1
     act(() => {
       result.current.sendMessage('1', 'hi');
     });
@@ -155,26 +159,50 @@ describe('useSSE', () => {
     });
 
     act(() => {
-      mock.pushEvent({ type: 'token', content: 'abc' });
+      mock1.pushEvent({ type: 'token', content: 'A' });
     });
     await waitFor(() => {
-      expect(result.current.tokens).toBe('abc');
+      expect(result.current.tokens).toBe('A');
+    });
+
+    // Switch to conversation 2 — stream 1 keeps running
+    rerender({ activeId: '2' });
+    expect(result.current.isStreaming).toBe(false);
+    expect(result.current.tokens).toBe('');
+
+    // Start stream for conversation 2
+    act(() => {
+      result.current.sendMessage('2', 'hello');
+    });
+    await waitFor(() => {
+      expect(result.current.isStreaming).toBe(true);
     });
 
     act(() => {
-      result.current.reset();
+      mock2.pushEvent({ type: 'token', content: 'B' });
+    });
+    await waitFor(() => {
+      expect(result.current.tokens).toBe('B');
     });
 
-    expect(result.current.tokens).toBe('');
-    expect(result.current.isStreaming).toBe(false);
-    expect(result.current.error).toBeNull();
+    // Switch back to conversation 1 — still streaming
+    rerender({ activeId: '1' });
+    expect(result.current.isStreaming).toBe(true);
+    expect(result.current.tokens).toBe('A');
+
+    act(() => {
+      mock1.pushEvent({ type: 'token', content: 'BC' });
+    });
+    await waitFor(() => {
+      expect(result.current.tokens).toBe('ABC');
+    });
   });
 
   it('sets error when streamMessage throws', async () => {
     const mock = createStreamMock();
     mockStreamMessage.mockReturnValue(mock);
 
-    const { result } = renderHook(() => useSSE());
+    const { result } = renderHook(() => useSSE('1'));
 
     act(() => {
       result.current.sendMessage('1', 'hi');

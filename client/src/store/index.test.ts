@@ -12,8 +12,8 @@ vi.mock('@services/api', () => ({
 const initialState = {
   user: null,
   conversations: [],
-  messages: [],
-  messagesLoading: false,
+  messagesMap: {},
+  messagesLoading: {},
 };
 
 beforeEach(() => {
@@ -31,10 +31,14 @@ describe('auth actions', () => {
     useAppStore.setState({
       user: { id: '1', username: 'zeng' },
       conversations: [{ id: '1', title: 't' }],
+      messagesMap: { '1': [{ id: 'm1', role: 'user', content: 'hi' }] },
+      messagesLoading: { '1': true },
     });
     useAppStore.getState().logout();
     expect(useAppStore.getState().user).toBeNull();
     expect(useAppStore.getState().conversations).toEqual([]);
+    expect(useAppStore.getState().messagesMap).toEqual({});
+    expect(useAppStore.getState().messagesLoading).toEqual({});
   });
 });
 
@@ -55,36 +59,30 @@ describe('loadMessages', () => {
     mockGetConversation.mockResolvedValue({ id: '1', title: 't', messages: msgs });
 
     const promise = useAppStore.getState().loadMessages('1');
-    expect(useAppStore.getState().messagesLoading).toBe(true);
+    expect(useAppStore.getState().messagesLoading['1']).toBe(true);
 
     await promise;
-    expect(useAppStore.getState().messages).toEqual(msgs);
-    expect(useAppStore.getState().messagesLoading).toBe(false);
+    expect(useAppStore.getState().messagesMap['1']).toEqual(msgs);
+    expect(useAppStore.getState().messagesLoading['1']).toBe(false);
   });
 
   it('clears loading on error', async () => {
     mockGetConversation.mockRejectedValue(new Error('boom'));
 
     await useAppStore.getState().loadMessages('1');
-    expect(useAppStore.getState().messagesLoading).toBe(false);
-    expect(useAppStore.getState().messages).toEqual([]);
+    expect(useAppStore.getState().messagesLoading['1']).toBe(false);
+    expect(useAppStore.getState().messagesMap['1']).toBeUndefined();
   });
 });
 
 describe('addMessage', () => {
-  it('appends message to state', () => {
-    useAppStore.getState().addMessage({ id: 'm1', role: 'user', content: 'hi' });
-    useAppStore.getState().addMessage({ id: 'm2', role: 'assistant', content: 'hello' });
+  it('appends message to the right conversation', () => {
+    useAppStore.getState().addMessage('1', { id: 'm1', role: 'user', content: 'hi' });
+    useAppStore.getState().addMessage('1', { id: 'm2', role: 'assistant', content: 'hello' });
+    useAppStore.getState().addMessage('2', { id: 'm3', role: 'user', content: 'other' });
 
-    expect(useAppStore.getState().messages).toHaveLength(2);
-    expect(useAppStore.getState().messages[0].id).toBe('m1');
-  });
-});
-
-describe('clearMessages', () => {
-  it('resets messages to empty', () => {
-    useAppStore.getState().addMessage({ id: 'm1', role: 'user', content: 'hi' });
-    useAppStore.getState().clearMessages();
-    expect(useAppStore.getState().messages).toEqual([]);
+    expect(useAppStore.getState().messagesMap['1']).toHaveLength(2);
+    expect(useAppStore.getState().messagesMap['1'][0].id).toBe('m1');
+    expect(useAppStore.getState().messagesMap['2']).toHaveLength(1);
   });
 });

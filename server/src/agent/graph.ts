@@ -136,11 +136,11 @@ export async function graph(): Promise<any> {
   return _graph;
 }
 
-export async function runAgentStream(threadId: string, userMessage: string) {
+export async function runAgentStream(threadId: string, userMessage: string, signal?: AbortSignal) {
   const g = await getGraph();
   return g.stream(
     { messages: [new HumanMessage(userMessage)] },
-    { configurable: { thread_id: threadId }, streamMode: 'messages' as const },
+    { configurable: { thread_id: threadId }, streamMode: 'messages' as const, signal },
   );
 }
 

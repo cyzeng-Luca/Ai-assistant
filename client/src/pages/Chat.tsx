@@ -20,32 +20,27 @@ export default function ChatPage() {
   const logout = useAppStore((s) => s.logout);
   const fetchConversations = useAppStore((s) => s.fetchConversations);
   const conversations = useAppStore((s) => s.conversations);
-  const messages = useAppStore((s) => s.messages);
+  const messagesMap = useAppStore((s) => s.messagesMap);
   const messagesLoading = useAppStore((s) => s.messagesLoading);
   const loadMessages = useAppStore((s) => s.loadMessages);
   const addMessage = useAppStore((s) => s.addMessage);
-  const clearMessages = useAppStore((s) => s.clearMessages);
 
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  const {
-    tokens,
-    streamingId,
-    isStreaming,
-    error,
-    sendMessage,
-    stopStreaming,
-    reset: resetSSE,
-  } = useSSE((sid, fullAnswer) => {
-    addMessage({ id: sid, role: 'assistant', content: fullAnswer });
-  });
+  const messages = messagesMap[activeId ?? ''] ?? [];
+  const loading = messagesLoading[activeId ?? ''] ?? false;
+
+  const { tokens, streamingId, isStreaming, error, sendMessage, stopStreaming } = useSSE(
+    activeId,
+    (conversationId, sid, fullAnswer) => {
+      addMessage(conversationId, { id: sid, role: 'assistant', content: fullAnswer });
+    },
+  );
 
   const activeConversation = conversations.find((c) => c.id === activeId);
 
   const handleSelect = (id: string, skipLoad?: boolean) => {
     if (id === activeId) return;
-    resetSSE();
-    clearMessages();
     setActiveId(id);
     if (!skipLoad) void loadMessages(id);
     if (isMobile) setDrawerOpen(false);
@@ -59,7 +54,7 @@ export default function ChatPage() {
 
   const handleSend = async (content: string) => {
     if (!activeId) return;
-    addMessage({ id: generateUUID(), role: 'user', content });
+    addMessage(activeId, { id: generateUUID(), role: 'user', content });
     sendMessage(activeId, content);
     if (!activeConversation?.title) {
       await api.updateConversationTitle(activeId, content);
@@ -75,7 +70,7 @@ export default function ChatPage() {
         streamingContent={tokens}
         streamingError={error}
         messages={messages}
-        loading={messagesLoading}
+        loading={loading}
         streamingId={streamingId}
         isStreaming={isStreaming}
       />
@@ -84,7 +79,7 @@ export default function ChatPage() {
           streamingContent={tokens}
           streamingError={error}
           messages={messages}
-          loading={messagesLoading}
+          loading={loading}
           streamingId={streamingId}
           isStreaming={isStreaming}
         /> */}
@@ -93,7 +88,7 @@ export default function ChatPage() {
           onSend={(content) => {
             void handleSend(content);
           }}
-          onStop={stopStreaming}
+          onStop={() => { stopStreaming(activeId ?? undefined); }}
           isStreaming={isStreaming}
           disabled={!activeId}
         /> */}
@@ -156,7 +151,7 @@ export default function ChatPage() {
           streamingContent={tokens}
           streamingError={error}
           messages={messages}
-          loading={messagesLoading}
+          loading={loading}
           streamingId={streamingId}
           isStreaming={isStreaming}
         />
@@ -165,7 +160,9 @@ export default function ChatPage() {
           onSend={(content) => {
             void handleSend(content);
           }}
-          onStop={stopStreaming}
+          onStop={() => {
+            stopStreaming(activeId ?? undefined);
+          }}
           isStreaming={isStreaming}
           disabled={!activeId}
         />

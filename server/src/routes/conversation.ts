@@ -137,8 +137,14 @@ conversationRouter.post('/:id/messages', llmLimiter, conversationGuard, async (r
   const threadId = req.params.id as string;
   logger.info({ threadId }, 'Calling LLM');
 
+  const controller = new AbortController();
+  req.on('close', () => {
+    logger.info({ threadId }, 'Client disconnected, aborting LLM stream');
+    controller.abort();
+  });
+
   try {
-    const stream = await runAgentStream(threadId, content);
+    const stream = await runAgentStream(threadId, content, controller.signal);
     let fullResponse = '';
 
     for await (const [chunk] of stream) {
@@ -153,8 +159,11 @@ conversationRouter.post('/:id/messages', llmLimiter, conversationGuard, async (r
 
     send('done', { content: fullResponse });
   } catch (error) {
-    logger.error({ err: error, threadId }, 'LLM call failed');
-    send('error', { message: '生成回答失败，请稍后重试' });
+    if (controller.signal.aborted) {
+      logger.info({ threadId }, 'LLM stream aborted (client disconnected)');
+    } else {
+      logger.error({ err: error, threadId }, 'LLM call failed');
+    }
   } finally {
     res.end();
   }

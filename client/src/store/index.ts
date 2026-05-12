@@ -11,11 +11,10 @@ interface AppStore {
   conversations: Conversation[];
   fetchConversations: () => Promise<void>;
 
-  messages: Message[];
-  messagesLoading: boolean;
+  messagesMap: Record<string, Message[]>;
+  messagesLoading: Record<string, boolean>;
   loadMessages: (conversationId: string) => Promise<void>;
-  addMessage: (message: Message) => void;
-  clearMessages: () => void;
+  addMessage: (conversationId: string, message: Message) => void;
 }
 
 export const useAppStore = create<AppStore>()(
@@ -23,7 +22,7 @@ export const useAppStore = create<AppStore>()(
     (set) => ({
       user: null,
       setUser: (user) => set({ user }),
-      logout: () => set({ user: null, conversations: [], messages: [] }),
+      logout: () => set({ user: null, conversations: [], messagesMap: {}, messagesLoading: {} }),
 
       conversations: [],
       fetchConversations: async () => {
@@ -31,19 +30,29 @@ export const useAppStore = create<AppStore>()(
         set({ conversations });
       },
 
-      messages: [],
-      messagesLoading: false,
+      messagesMap: {},
+      messagesLoading: {},
       loadMessages: async (conversationId) => {
-        set({ messagesLoading: true });
+        set((s) => ({ messagesLoading: { ...s.messagesLoading, [conversationId]: true } }));
         try {
           const conv = await api.getConversation(conversationId);
-          set({ messages: conv.messages ?? [], messagesLoading: false });
+          set((s) => ({
+            messagesMap: { ...s.messagesMap, [conversationId]: conv.messages ?? [] },
+            messagesLoading: { ...s.messagesLoading, [conversationId]: false },
+          }));
         } catch {
-          set({ messagesLoading: false });
+          set((s) => ({
+            messagesLoading: { ...s.messagesLoading, [conversationId]: false },
+          }));
         }
       },
-      addMessage: (message) => set((s) => ({ messages: [...s.messages, message] })),
-      clearMessages: () => set({ messages: [] }),
+      addMessage: (conversationId, message) =>
+        set((s) => ({
+          messagesMap: {
+            ...s.messagesMap,
+            [conversationId]: [...(s.messagesMap[conversationId] ?? []), message],
+          },
+        })),
     }),
     {
       name: 'app-storage',
